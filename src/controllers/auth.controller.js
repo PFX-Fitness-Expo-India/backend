@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
-const userModel = require("../models/userModel");
-const CommonResponse = require("../utils/commonResponse");
+const userModel = require("../models/user.model");
+const CommonResponse = require("../utils/common.response");
 
 const login = async (req, res) => {
   try {
@@ -73,7 +73,6 @@ const signup = async (req, res) => {
         .json(new CommonResponse(400, "Missing required fields", null));
     }
 
-    // Validation
     if (!validator.isEmail(email)) {
       return res
         .status(400)

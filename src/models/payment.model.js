@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const paymentSchema = require("../schema/paymentSchema");
+const paymentSchema = require("../schema/payment.schema");
 
 const paymentModel = mongoose.model("Payment", paymentSchema);
 
