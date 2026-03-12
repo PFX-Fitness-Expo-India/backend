@@ -7,6 +7,7 @@ const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db.config");
 const authRoutes = require("./routes/auth.route");
+const eventRoutes = require("./routes/event.route");
 
 connectDB();
 
@@ -29,6 +30,7 @@ app.use("/api/", limiter);
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/events", eventRoutes);
 app.get("/", (req, res) => {
   res.send("API is running");
 });

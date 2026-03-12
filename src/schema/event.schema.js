@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
+const Counter = require("../models/counter.model");
 
 const eventSchema = new mongoose.Schema({
-  eventId: String,
+  eventId: {
+    type: String,
+    unique: true,
+  },
   eventName: {
     type: String,
     required: true,
@@ -36,6 +40,21 @@ const eventSchema = new mongoose.Schema({
     type: String,
     enum: ["online", "offline"],
   },
+});
+
+eventSchema.pre("save", async function () {
+  if (this.isNew) {
+    try {
+      const counter = await Counter.findByIdAndUpdate(
+        "event",
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.eventId = `pfx-event-${counter.seq}`;
+    } catch (error) {
+      throw error;
+    }
+  }
 });
 
 module.exports = eventSchema;
