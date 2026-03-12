@@ -5,24 +5,24 @@ const cors = require("cors");
 const morgan = require("morgan");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
+const connectDB = require("./config/db.config");
 const authRoutes = require("./routes/auth.route");
+
+connectDB();
 
 const app = express();
 
-// Security middleware
 app.use(helmet());
 app.use(cors());
 
-// Logging middleware
 app.use(morgan("dev"));
 
-// Performance middleware
 app.use(compression());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
 });
 app.use("/api/", limiter);
 
