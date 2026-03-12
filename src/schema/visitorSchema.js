@@ -22,6 +22,11 @@ const visitorSchema = new Schema({
         type: String,
         enum: ["success", "pending", "failed"],
     },
+    ticketType:{
+        required: true,
+        type: String,
+        enum: ["gold", "elite", "standard"],
+    },
     timeStamp: {
         type: Date,
         default: Date.now,
