@@ -1,28 +1,18 @@
 const schema = require("mongoose");
 
 const atheleteRegistrationSchema = new schema({
+  registrationId: String,
   userId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   eventId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Event",
     required: true,
   },
-  phoneNumber: {
-    type: String,
-    required: true,
-  },
-  bookingType: {
-    type: String,
-    required: true,
-    enum: ["online", "offline"],
-  },
-  paymentType: {
-    type: String,
-    required: true,
-    enum: ["success", "pending", "failed"],
-  },
+
   timeStamp: {
     type: Date,
     default: Date.now,
