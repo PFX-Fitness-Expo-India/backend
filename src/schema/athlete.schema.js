@@ -1,6 +1,6 @@
-const schema = require("mongoose");
+const mongoose = require("mongoose");
 
-const atheleteRegistrationSchema = new schema({
+const athleteRegistrationSchema = new mongoose.Schema({
   registrationId: String,
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -10,6 +10,19 @@ const atheleteRegistrationSchema = new schema({
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Event",
+    required: true,
+  },
+  age: {
+    type: Number,
+    required: true,
+  },
+  gender: {
+    type: String,
+    required: true,
+    enum: ["male", "female"],
+  },
+  weight: {
+    type: Number,
     required: true,
   },
 
@@ -24,4 +37,4 @@ const atheleteRegistrationSchema = new schema({
   },
 });
 
-module.exports = atheleteRegistrationSchema;
+module.exports = athleteRegistrationSchema;
