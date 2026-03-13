@@ -13,6 +13,8 @@ const createEvent = async (req, res) => {
       eventPrice,
       eventImage,
       paymentMethod,
+      haveSubcategory,
+      subcategories,
     } = req.body;
 
     const event = new eventModel({
@@ -25,6 +27,8 @@ const createEvent = async (req, res) => {
       eventPrice,
       eventImage,
       paymentMethod,
+      haveSubcategory,
+      subcategories,
     });
 
     await event.save();

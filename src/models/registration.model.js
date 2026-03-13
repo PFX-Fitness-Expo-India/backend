@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
-const atheleteRegistrationSchema = require("../schema/registration.schema");
+const athleteRegistrationSchema = require("../schema/athlete.schema");
 
-const registrationModel = mongoose.model("Registration", atheleteRegistrationSchema);
+const registrationModel = mongoose.model("Registration", athleteRegistrationSchema);
 
 module.exports = registrationModel;

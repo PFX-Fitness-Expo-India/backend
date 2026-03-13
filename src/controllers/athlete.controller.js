@@ -1,0 +1,132 @@
+const registrationModel = require("../models/registration.model");
+const CommonResponse = require("../utils/common.response");
+
+const createRegistration = async (req, res) => {
+  try {
+    const { userId, eventId, age, gender, weight } = req.body;
+
+    const registration = new registrationModel({
+      userId,
+      eventId,
+      age,
+      gender,
+      weight,
+      status: "pending",
+    });
+
+    await registration.save();
+
+    return res
+      .status(201)
+      .json(new CommonResponse(201, "Registration created successfully", registration));
+  } catch (error) {
+    console.error("Create registration error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+const getRegistrations = async (req, res) => {
+  try {
+    const registrations = await registrationModel.find()
+      .populate("userId", "userName email")
+      .populate("eventId", "eventName");
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Registrations fetched successfully", registrations));
+  } catch (error) {
+    console.error("Get registrations error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+const getRegistrationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const registration = await registrationModel.findById(id)
+      .populate("userId", "userName email")
+      .populate("eventId", "eventName");
+
+    if (!registration) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Registration not found", null));
+    }
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Registration fetched successfully", registration));
+  } catch (error) {
+    console.error("Get registration by id error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+const updateRegistrationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["pending", "approved", "rejected"].includes(status)) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid status", null));
+    }
+
+    const registration = await registrationModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!registration) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Registration not found", null));
+    }
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Registration status updated successfully", registration));
+  } catch (error) {
+    console.error("Update registration status error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+const deleteRegistration = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const registration = await registrationModel.findByIdAndDelete(id);
+
+    if (!registration) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Registration not found", null));
+    }
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Registration deleted successfully", null));
+  } catch (error) {
+    console.error("Delete registration error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+module.exports = {
+  createRegistration,
+  getRegistrations,
+  getRegistrationById,
+  updateRegistrationStatus,
+  deleteRegistration,
+};

@@ -40,6 +40,16 @@ const eventSchema = new mongoose.Schema({
     type: String,
     enum: ["online", "offline"],
   },
+  haveSubcategory: {
+    type: Boolean,
+    enum: [true, false],
+    default: false,
+  },
+  subcategories: [
+    {
+      name: String,
+    },
+  ],
 });
 
 eventSchema.pre("save", async function () {
@@ -48,7 +58,7 @@ eventSchema.pre("save", async function () {
       const counter = await Counter.findByIdAndUpdate(
         "event",
         { $inc: { seq: 1 } },
-        { new: true, upsert: true }
+        { new: true, upsert: true },
       );
       this.eventId = `pfx-event-${counter.seq}`;
     } catch (error) {

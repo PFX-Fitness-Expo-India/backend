@@ -8,6 +8,9 @@ const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db.config");
 const authRoutes = require("./routes/auth.route");
 const eventRoutes = require("./routes/event.route");
+const athleteRoutes = require("./routes/athlete.route");
+const visitorRoutes = require("./routes/visitor.route");
+const paymentRoutes = require("./routes/payment.route");
 
 connectDB();
 
@@ -31,6 +34,9 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/athletes", athleteRoutes);
+app.use("/api/visitors", visitorRoutes);
+app.use("/api/payments", paymentRoutes);
 app.get("/", (req, res) => {
   res.send("API is running");
 });
