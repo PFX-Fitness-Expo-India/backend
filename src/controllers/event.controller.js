@@ -80,6 +80,11 @@ const getEventById = async (req, res) => {
       .json(new CommonResponse(200, "Event fetched successfully", event));
   } catch (error) {
     console.error("Get event by id error:", error);
+    if (error.name === "CastError") {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid Event ID format", null));
+    }
     return res
       .status(500)
       .json(new CommonResponse(500, "Internal server error", null));
@@ -107,6 +112,11 @@ const updateEvent = async (req, res) => {
       .json(new CommonResponse(200, "Event updated successfully", event));
   } catch (error) {
     console.error("Update event error:", error);
+    if (error.name === "CastError") {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid Event ID format", null));
+    }
     return res
       .status(500)
       .json(new CommonResponse(500, "Internal server error", null));
@@ -129,6 +139,11 @@ const deleteEvent = async (req, res) => {
       .json(new CommonResponse(200, "Event deleted successfully", null));
   } catch (error) {
     console.error("Delete event error:", error);
+    if (error.name === "CastError") {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid Event ID format", null));
+    }
     return res
       .status(500)
       .json(new CommonResponse(500, "Internal server error", null));
