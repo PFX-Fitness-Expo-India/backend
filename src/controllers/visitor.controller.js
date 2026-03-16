@@ -145,6 +145,43 @@ const getVisitorCount = async (req, res) => {
   }
 };
 
+const getListOfVisitors = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, ticketType, attendance } = req.query;
+
+    const filter = {};
+    if (ticketType) filter.ticketType = ticketType;
+    if (attendance) filter.isAttendingEvent = attendance;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const totalCount = await visitorModel.countDocuments(filter);
+    const visitors = await visitorModel
+      .find(filter)
+      .populate("userId", "userName email")
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
+
+    return res.status(200).json(
+      new CommonResponse(200, "Visitors fetched successfully", {
+        visitors,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: parseInt(page),
+          limit: parseInt(limit),
+        },
+      }),
+    );
+  } catch (error) {
+    console.error("Get visitors error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   createVisitor,
   getVisitors,
@@ -152,4 +189,5 @@ module.exports = {
   updateVisitorAttendance,
   deleteVisitor,
   getVisitorCount,
+  getListOfVisitors,
 };

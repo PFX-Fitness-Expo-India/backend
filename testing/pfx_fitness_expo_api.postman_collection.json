@@ -611,6 +611,53 @@
 					"response": []
 				},
 				{
+					"name": "Get Visitors List (Paginated & Filtered)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/visitors/get-visitors?page=1&limit=10&ticketType=gold&attendance=present",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"visitors",
+								"get-visitors"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "ticketType",
+									"value": "gold"
+								},
+								{
+									"key": "attendance",
+									"value": "present"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update Visitor Attendance (Admin/Dev)",
 					"request": {
 						"auth": {

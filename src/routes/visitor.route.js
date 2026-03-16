@@ -6,6 +6,7 @@ const {
   updateVisitorAttendance,
   deleteVisitor,
   getVisitorCount,
+  getListOfVisitors,
 } = require("../controllers/visitor.controller");
 const { authenticate, authorize } = require("../middlewares/auth.middleware");
 
@@ -14,6 +15,7 @@ const router = express.Router();
 router.post("/", authenticate, createVisitor);
 router.get("/", authenticate, authorize("admin"), getVisitors);
 router.get("/get-count", authenticate, authorize("admin"), getVisitorCount);
+router.get("/get-visitors", authenticate, getListOfVisitors);
 router.get("/:id", authenticate, getVisitorById);
 router.put(
   "/:id/attendance",
