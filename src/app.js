@@ -31,7 +31,6 @@ app.use(morgan("dev"));
 
 app.use(compression());
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
