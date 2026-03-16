@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 const visitorSchema = new mongoose.Schema({
-  visitorId: String,
   userId: {
     type: String,
     required: true,
@@ -17,7 +16,7 @@ const visitorSchema = new mongoose.Schema({
   },
   isAttendingEvent: {
     type: String,
-    default: false,
+    default: "notPresent",
     enum: ["notPresent", "present", "attending"],
   },
 });

@@ -18,6 +18,7 @@ const createRegistration = async (req, res) => {
 
     await registration.save();
 
+    
     return res
       .status(201)
       .json(

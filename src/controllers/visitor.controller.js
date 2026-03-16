@@ -1,9 +1,18 @@
 const visitorModel = require("../models/visitor.model");
 const CommonResponse = require("../utils/common.response");
+const userModel = require("../models/user.model");
 
 const createVisitor = async (req, res) => {
   try {
     const { userId, ticketType } = req.body;
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "User not found", null));
+    }
 
     const visitor = new visitorModel({
       userId,
@@ -70,10 +79,9 @@ const updateVisitorAttendance = async (req, res) => {
         .json(new CommonResponse(400, "Invalid attendance status", null));
     }
 
-    const visitor = await visitorModel.findByIdAndUpdate(
-      id,
+    const visitor = await visitorModel.findOneAndUpdate(
+      { userId: id },
       { isAttendingEvent },
-      { new: true },
     );
 
     if (!visitor) {
