@@ -377,6 +377,44 @@
 					"response": []
 				},
 				{
+					"name": "Add Athlete To Event (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/athletes/add-game",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"athletes",
+								"add-game"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Registration By ID",
 					"request": {
 						"auth": {

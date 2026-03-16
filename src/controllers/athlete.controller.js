@@ -1,4 +1,6 @@
 const registrationModel = require("../models/registration.model");
+const userModel = require("../models/user.model");
+const eventModel = require("../models/event.model");
 const CommonResponse = require("../utils/common.response");
 
 const createRegistration = async (req, res) => {
@@ -165,6 +167,52 @@ const getAtheleteCount = async (req, res) => {
   }
 };
 
+const addAtheleteToEvent = async (req, res) => {
+  try {
+    const { eventId, userMail, age, gender, weight } = req.body;
+
+    const user = await userModel.findOne({ email: userMail });
+    if (!user) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "User not found", null));
+    }
+
+    const event = await eventModel.findById(eventId);
+    if (!event) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Event not found", null));
+    }
+
+    const registration = new registrationModel({
+      userId: user._id,
+      eventId,
+      age,
+      gender,
+      weight,
+      status: "pending",
+    });
+
+    await registration.save();
+
+    return res
+      .status(201)
+      .json(
+        new CommonResponse(
+          201,
+          "Registration created successfully",
+          registration,
+        ),
+      );
+  } catch (error) {
+    console.error("Add athelete to event error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   createRegistration,
   getRegistrations,
@@ -172,4 +220,5 @@ module.exports = {
   updateRegistrationStatus,
   deleteRegistration,
   getAtheleteCount,
+  addAtheleteToEvent,
 };
