@@ -348,6 +348,35 @@
 					"response": []
 				},
 				{
+					"name": "Get Athlete Count (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/athletes/get-count",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"athletes",
+								"get-count"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Registration By ID",
 					"request": {
 						"auth": {
@@ -509,6 +538,35 @@
 							"path": [
 								"api",
 								"visitors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Visitor Count (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/visitors/get-count",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"visitors",
+								"get-count"
 							]
 						}
 					},
@@ -688,7 +746,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:3000",
+			"value": "http://localhost:3001",
 			"type": "string"
 		},
 		{
