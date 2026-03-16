@@ -73,7 +73,7 @@ const updateVisitorAttendance = async (req, res) => {
     const visitor = await visitorModel.findByIdAndUpdate(
       id,
       { isAttendingEvent },
-      { new: true }
+      { new: true },
     );
 
     if (!visitor) {
@@ -84,7 +84,13 @@ const updateVisitorAttendance = async (req, res) => {
 
     return res
       .status(200)
-      .json(new CommonResponse(200, "Visitor attendance updated successfully", visitor));
+      .json(
+        new CommonResponse(
+          200,
+          "Visitor attendance updated successfully",
+          visitor,
+        ),
+      );
   } catch (error) {
     console.error("Update visitor attendance error:", error);
     return res
@@ -115,10 +121,27 @@ const deleteVisitor = async (req, res) => {
   }
 };
 
+const getVisitorCount = async (req, res) => {
+  try {
+    const count = await visitorModel.countDocuments();
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(200, "Visitor count fetched successfully", count),
+      );
+  } catch (error) {
+    console.error("Get visitor count error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   createVisitor,
   getVisitors,
   getVisitorById,
   updateVisitorAttendance,
   deleteVisitor,
+  getVisitorCount,
 };

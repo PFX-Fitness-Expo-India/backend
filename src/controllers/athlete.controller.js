@@ -18,7 +18,13 @@ const createRegistration = async (req, res) => {
 
     return res
       .status(201)
-      .json(new CommonResponse(201, "Registration created successfully", registration));
+      .json(
+        new CommonResponse(
+          201,
+          "Registration created successfully",
+          registration,
+        ),
+      );
   } catch (error) {
     console.error("Create registration error:", error);
     return res
@@ -29,12 +35,19 @@ const createRegistration = async (req, res) => {
 
 const getRegistrations = async (req, res) => {
   try {
-    const registrations = await registrationModel.find()
+    const registrations = await registrationModel
+      .find()
       .populate("userId", "userName email")
       .populate("eventId", "eventName");
     return res
       .status(200)
-      .json(new CommonResponse(200, "Registrations fetched successfully", registrations));
+      .json(
+        new CommonResponse(
+          200,
+          "Registrations fetched successfully",
+          registrations,
+        ),
+      );
   } catch (error) {
     console.error("Get registrations error:", error);
     return res
@@ -46,7 +59,8 @@ const getRegistrations = async (req, res) => {
 const getRegistrationById = async (req, res) => {
   try {
     const { id } = req.params;
-    const registration = await registrationModel.findById(id)
+    const registration = await registrationModel
+      .findById(id)
       .populate("userId", "userName email")
       .populate("eventId", "eventName");
 
@@ -58,7 +72,13 @@ const getRegistrationById = async (req, res) => {
 
     return res
       .status(200)
-      .json(new CommonResponse(200, "Registration fetched successfully", registration));
+      .json(
+        new CommonResponse(
+          200,
+          "Registration fetched successfully",
+          registration,
+        ),
+      );
   } catch (error) {
     console.error("Get registration by id error:", error);
     return res
@@ -81,7 +101,7 @@ const updateRegistrationStatus = async (req, res) => {
     const registration = await registrationModel.findByIdAndUpdate(
       id,
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!registration) {
@@ -92,7 +112,13 @@ const updateRegistrationStatus = async (req, res) => {
 
     return res
       .status(200)
-      .json(new CommonResponse(200, "Registration status updated successfully", registration));
+      .json(
+        new CommonResponse(
+          200,
+          "Registration status updated successfully",
+          registration,
+        ),
+      );
   } catch (error) {
     console.error("Update registration status error:", error);
     return res
@@ -123,10 +149,27 @@ const deleteRegistration = async (req, res) => {
   }
 };
 
+const getAtheleteCount = async (req, res) => {
+  try {
+    const count = await registrationModel.countDocuments();
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(200, "Athelete count fetched successfully", count),
+      );
+  } catch (error) {
+    console.error("Get athelete count error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   createRegistration,
   getRegistrations,
   getRegistrationById,
   updateRegistrationStatus,
   deleteRegistration,
+  getAtheleteCount,
 };
