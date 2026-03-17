@@ -50,6 +50,9 @@
 									"}",
 									"if (jsonData.data && jsonData.data.refreshToken) {",
 									"    pm.environment.set(\"refreshToken\", jsonData.data.refreshToken);",
+									"}",
+									"if (jsonData.data && jsonData.data.userId) {",
+									"    pm.environment.set(\"userId\", jsonData.data.userId);",
 									"}"
 								],
 								"type": "text/javascript"
@@ -148,6 +151,44 @@
 								"api",
 								"auth",
 								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"oldPassword\": \"Password123\",\n    \"newPassword\": \"NewPassword123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/change-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"change-password"
 							]
 						}
 					},

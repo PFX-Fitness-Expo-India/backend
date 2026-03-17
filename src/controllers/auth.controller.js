@@ -69,6 +69,7 @@ const login = async (req, res) => {
       new CommonResponse(200, "Login successful", {
         token: accessToken,
         refreshToken,
+        userId: user._id,
         role: user.role,
         userName: user.userName,
       }),
@@ -206,4 +207,44 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { login, signup, refreshAccessToken, logout };
+const changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    if (!oldPassword || !newPassword) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Old and new passwords are required", null));
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "User not found", null));
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json(new CommonResponse(401, "Invalid old password", null));
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Password changed successfully", null));
+  } catch (error) {
+    console.error("Change password error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+module.exports = { login, signup, refreshAccessToken, logout, changePassword };
