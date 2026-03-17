@@ -790,7 +790,7 @@
 			"name": "Payments",
 			"item": [
 				{
-					"name": "Create Payment",
+					"name": "Create Payment (Direct)",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -821,6 +821,82 @@
 							"path": [
 								"api",
 								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Razorpay Order",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"amount\": 1500\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/create-order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"payments",
+								"create-order"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Razorpay Payment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"razorpay_order_id\": \"order_P1l5HnKxY5s4Nf\",\n    \"razorpay_payment_id\": \"pay_P1l5S2j9K8z1Lp\",\n    \"razorpay_signature\": \"xxxxxx\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/verify-payment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"payments",
+								"verify-payment"
 							]
 						}
 					},
