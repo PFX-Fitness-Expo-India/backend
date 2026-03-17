@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
+require("dotenv").config();
 const userModel = require("../models/user.model");
 const CommonResponse = require("../utils/common.response");
 
@@ -41,19 +42,31 @@ const login = async (req, res) => {
         .json(new CommonResponse(401, "Invalid password", null));
     }
 
-    // Generate JWT
-    const token = jwt.sign(
+    // Generate Access Token
+    const accessToken = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "1d" },
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m" }
     );
+
+    // Generate Refresh Token
+    const refreshToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_REFRESH_SECRET || "refresh_secret",
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }
+    );
+
+    // Save Refresh Token to database
+    user.refreshToken = refreshToken;
+    await user.save();
 
     return res.status(200).json(
       new CommonResponse(200, "Login successful", {
-        token,
+        token: accessToken,
+        refreshToken,
         role: user.role,
         userName: user.userName,
-      }),
+      })
     );
   } catch (error) {
     console.error("Login error:", error);
@@ -123,4 +136,67 @@ const signup = async (req, res) => {
   }
 };
 
-module.exports = { login, signup };
+const refreshAccessToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Refresh token is required", null));
+    }
+
+    // Verify refresh token
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET || "refresh_secret"
+    );
+
+    // Find user and check if refresh token matches
+    const user = await userModel.findById(decoded.userId);
+
+    if (!user || user.refreshToken !== refreshToken) {
+      return res
+        .status(401)
+        .json(new CommonResponse(401, "Invalid refresh token", null));
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m" }
+    );
+
+    return res.status(200).json(
+      new CommonResponse(200, "Token refreshed successfully", {
+        token: newAccessToken,
+      })
+    );
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return res
+      .status(401)
+      .json(new CommonResponse(401, "Invalid or expired refresh token", null));
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Clear refresh token in database
+    await userModel.findByIdAndUpdate(userId, { refreshToken: null });
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Logout successful", null));
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+module.exports = { login, signup, refreshAccessToken, logout };

@@ -1,10 +1,17 @@
 const express = require("express");
-const { login, signup } = require("../controllers/auth.controller");
+const {
+  login,
+  signup,
+  refreshAccessToken,
+  logout,
+} = require("../controllers/auth.controller");
 const { authenticate } = require("../middlewares/auth.middleware");
 const router = express.Router();
 
 router.post("/login", login);
 router.post("/signup", signup);
+router.post("/refresh-token", refreshAccessToken);
+router.post("/logout", authenticate, logout);
 
 router.get("/profile", authenticate, (req, res) => {
   res.status(200).json({
