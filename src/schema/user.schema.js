@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["dev", "athlete", "visitor", "admin"],
   },
+  refreshToken: {
+    type: String,
+    default: null,
+  },
 });
 
 module.exports = userSchema;
