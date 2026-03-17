@@ -21,12 +21,6 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 
-// Diagnostic logging
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});
-
 app.use(morgan("dev"));
 
 app.use(compression());
@@ -42,6 +36,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/athletes", athleteRoutes);
+
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/payments", paymentRoutes);
 

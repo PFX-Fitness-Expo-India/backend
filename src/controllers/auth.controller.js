@@ -13,7 +13,13 @@ const login = async (req, res) => {
     if (!credentials || !password) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Credentials and password are required", null));
+        .json(
+          new CommonResponse(
+            400,
+            "Credentials and password are required",
+            null,
+          ),
+        );
     }
 
     let user;
@@ -25,7 +31,9 @@ const login = async (req, res) => {
     } else {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Invalid email or phone number format", null));
+        .json(
+          new CommonResponse(400, "Invalid email or phone number format", null),
+        );
     }
 
     if (!user) {
@@ -42,21 +50,18 @@ const login = async (req, res) => {
         .json(new CommonResponse(401, "Invalid password", null));
     }
 
-    // Generate Access Token
     const accessToken = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m" }
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "6h" },
     );
 
-    // Generate Refresh Token
     const refreshToken = jwt.sign(
       { userId: user._id },
       process.env.JWT_REFRESH_SECRET || "refresh_secret",
-      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "10d" },
     );
 
-    // Save Refresh Token to database
     user.refreshToken = refreshToken;
     await user.save();
 
@@ -66,7 +71,7 @@ const login = async (req, res) => {
         refreshToken,
         role: user.role,
         userName: user.userName,
-      })
+      }),
     );
   } catch (error) {
     console.error("Login error:", error);
@@ -101,7 +106,13 @@ const signup = async (req, res) => {
     if (!validator.isLength(password, { min: 6 })) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Password must be at least 6 characters long", null));
+        .json(
+          new CommonResponse(
+            400,
+            "Password must be at least 6 characters long",
+            null,
+          ),
+        );
     }
 
     const userPhone = await userModel.findOne({ phoneNumber });
@@ -146,13 +157,11 @@ const refreshAccessToken = async (req, res) => {
         .json(new CommonResponse(400, "Refresh token is required", null));
     }
 
-    // Verify refresh token
     const decoded = jwt.verify(
       refreshToken,
-      process.env.JWT_REFRESH_SECRET || "refresh_secret"
+      process.env.JWT_REFRESH_SECRET || "refresh_secret",
     );
 
-    // Find user and check if refresh token matches
     const user = await userModel.findById(decoded.userId);
 
     if (!user || user.refreshToken !== refreshToken) {
@@ -161,17 +170,16 @@ const refreshAccessToken = async (req, res) => {
         .json(new CommonResponse(401, "Invalid refresh token", null));
     }
 
-    // Generate new access token
     const newAccessToken = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m" }
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "1d" },
     );
 
     return res.status(200).json(
       new CommonResponse(200, "Token refreshed successfully", {
         token: newAccessToken,
-      })
+      }),
     );
   } catch (error) {
     console.error("Refresh token error:", error);
@@ -185,7 +193,6 @@ const logout = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Clear refresh token in database
     await userModel.findByIdAndUpdate(userId, { refreshToken: null });
 
     return res
