@@ -69,6 +69,7 @@ const login = async (req, res) => {
       new CommonResponse(200, "Login successful", {
         token: accessToken,
         refreshToken,
+        userId: user._id,
         role: user.role,
         userName: user.userName,
       }),

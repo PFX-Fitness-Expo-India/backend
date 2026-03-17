@@ -50,6 +50,9 @@
 									"}",
 									"if (jsonData.data && jsonData.data.refreshToken) {",
 									"    pm.environment.set(\"refreshToken\", jsonData.data.refreshToken);",
+									"}",
+									"if (jsonData.data && jsonData.data.userId) {",
+									"    pm.environment.set(\"userId\", jsonData.data.userId);",
 									"}"
 								],
 								"type": "text/javascript"
