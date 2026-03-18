@@ -1,7 +1,11 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const paymentModel = require("../models/payment.model");
+const visitorModel = require("../models/visitor.model");
+const registrationModel = require("../models/registration.model");
+const userModel = require("../models/user.model");
 const CommonResponse = require("../utils/common.response");
+const { issueTicket } = require("../utils/ticket.util");
 require("dotenv").config();
 
 const razorpay = new Razorpay({
@@ -34,7 +38,6 @@ const createOrder = async (req, res) => {
         .json(new CommonResponse(500, "Failed to create order", null));
     }
 
-    // Save initial payment record
     const payment = new paymentModel({
       userId,
       eventId,
@@ -50,7 +53,6 @@ const createOrder = async (req, res) => {
       .status(201)
       .json(new CommonResponse(201, "Order created successfully", order));
   } catch (error) {
-    // Log the full error to help identify the exact issue (e.g., invalid keys)
     console.error("Create order error details:", {
       message: error.message,
       code: error.code,
@@ -83,15 +85,33 @@ const verifyPayment = async (req, res) => {
     const isSignatureValid = expectedSignature === razorpay_signature;
 
     if (isSignatureValid) {
-      await paymentModel.findOneAndUpdate(
+      const updatedPayment = await paymentModel.findOneAndUpdate(
         { razorpayOrderId: razorpay_order_id },
         {
           razorpayPaymentId: razorpay_payment_id,
           razorpaySignature: razorpay_signature,
           paymentStatus: "completed",
           updatedAt: Date.now(),
-        }
+        },
+        { new: true }
       );
+
+      if (updatedPayment) {
+        // Issue ticket
+        const user = await userModel.findById(updatedPayment.userId);
+        if (user) {
+          let ticketType = "standard"; // Default fallback
+          if (user.role === "athlete") {
+            ticketType = "athlete";
+          } else {
+            const visitor = await visitorModel.findOne({ userId: user._id });
+            if (visitor) {
+              ticketType = visitor.ticketType;
+            }
+          }
+          await issueTicket(user._id, updatedPayment.eventId, ticketType);
+        }
+      }
 
       return res
         .status(200)
@@ -129,8 +149,24 @@ const razorpayWebhook = (req, res) => {
             { paymentStatus: "completed", updatedAt: Date.now() },
             { new: true }
           )
-          .then(() => {
+          .then(async (updatedPayment) => {
             console.log("Payment captured and updated:", payment.id);
+            if (updatedPayment) {
+              // Issue ticket
+              const user = await userModel.findById(updatedPayment.userId);
+              if (user) {
+                let ticketType = "standard"; // Default fallback
+                if (user.role === "athlete") {
+                  ticketType = "athlete";
+                } else {
+                  const visitor = await visitorModel.findOne({ userId: user._id });
+                  if (visitor) {
+                    ticketType = visitor.ticketType;
+                  }
+                }
+                await issueTicket(user._id, updatedPayment.eventId, ticketType);
+              }
+            }
           })
           .catch((err) => {
             console.error("Webhook DB update error:", err);
