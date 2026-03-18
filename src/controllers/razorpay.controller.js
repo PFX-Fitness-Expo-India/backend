@@ -28,6 +28,7 @@ const createOrder = async (req, res) => {
     const order = await razorpay.orders.create(options);
 
     if (!order) {
+      console.error("Order creation failed: Razorpay returned null/undefined");
       return res
         .status(500)
         .json(new CommonResponse(500, "Failed to create order", null));
@@ -49,10 +50,18 @@ const createOrder = async (req, res) => {
       .status(201)
       .json(new CommonResponse(201, "Order created successfully", order));
   } catch (error) {
-    console.error("Create order error:", error);
+    // Log the full error to help identify the exact issue (e.g., invalid keys)
+    console.error("Create order error details:", {
+      message: error.message,
+      code: error.code,
+      description: error.description,
+      metadata: error.metadata,
+      raw: error
+    });
+    const errorMessage = error.message || (typeof error === 'string' ? error : JSON.stringify(error));
     return res
       .status(500)
-      .json(new CommonResponse(500, "Internal server error", null));
+      .json(new CommonResponse(500, `Internal server error: ${errorMessage}`, null));
   }
 };
 
@@ -100,7 +109,46 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+const razorpayWebhook = (req, res) => {
+  try {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    const shasum = crypto.createHmac("sha256", secret);
+    shasum.update(JSON.stringify(req.body));
+    const digest = shasum.digest("hex");
+
+    if (digest === req.headers["x-razorpay-signature"]) {
+      const event = req.body.event;
+
+      if (event === "payment.captured") {
+        const payment = req.body.payload.payment.entity;
+
+        paymentModel
+          .findOneAndUpdate(
+            { razorpayPaymentId: payment.id },
+            { paymentStatus: "completed", updatedAt: Date.now() },
+            { new: true }
+          )
+          .then(() => {
+            console.log("Payment captured and updated:", payment.id);
+          })
+          .catch((err) => {
+            console.error("Webhook DB update error:", err);
+          });
+      }
+
+      return res.status(200).send("OK");
+    } else {
+      return res.status(400).send("Invalid signature");
+    }
+  } catch (error) {
+    console.error("Webhook error:", error);
+    return res.status(500).send("Internal Server Error");
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
+  razorpayWebhook,
 };

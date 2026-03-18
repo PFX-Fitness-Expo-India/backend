@@ -1029,6 +1029,35 @@
 					"response": []
 				},
 				{
+					"name": "Get Payment By ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/{{paymentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"payments",
+								"{{paymentId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update Payment Status (Admin)",
 					"request": {
 						"auth": {
@@ -1062,6 +1091,40 @@
 								"payments",
 								"{{paymentId}}",
 								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Razorpay Webhook (Simulated)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-razorpay-signature",
+								"value": "your_hmac_sha256_signature_here",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event\": \"payment.captured\",\n    \"payload\": {\n        \"payment\": {\n            \"entity\": {\n                \"id\": \"pay_P1l5S2j9K8z1Lp\",\n                \"order_id\": \"order_P1l5HnKxY5s4Nf\",\n                \"amount\": 150000,\n                \"currency\": \"INR\",\n                \"status\": \"captured\"\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/webhook",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"payments",
+								"webhook"
 							]
 						}
 					},
