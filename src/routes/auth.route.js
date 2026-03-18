@@ -5,6 +5,8 @@ const {
   refreshAccessToken,
   logout,
   changePassword,
+  forgotPassword,
+  resetPassword,
 } = require("../controllers/auth.controller");
 const { authenticate } = require("../middlewares/auth.middleware");
 const router = express.Router();
@@ -14,6 +16,8 @@ router.post("/signup", signup);
 router.post("/refresh-token", refreshAccessToken);
 router.post("/logout", authenticate, logout);
 router.post("/change-password", authenticate, changePassword);
+router.post("/forgot-password", forgotPassword);
+router.put("/reset-password/:token", resetPassword);
 
 router.get("/profile", authenticate, (req, res) => {
   res.status(200).json({

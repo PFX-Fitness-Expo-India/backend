@@ -2,9 +2,11 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
+const crypto = require("crypto");
 require("dotenv").config();
 const userModel = require("../models/user.model");
 const CommonResponse = require("../utils/common.response");
+const sendEmail = require("../utils/email.util");
 
 const login = async (req, res) => {
   try {
@@ -247,4 +249,118 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { login, signup, refreshAccessToken, logout, changePassword };
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Email is required", null));
+    }
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "User not found", null));
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    await user.save();
+
+    // Reset URL
+    const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/reset-password/${resetToken}`;
+
+    const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Password Reset Token",
+        message,
+      });
+
+      return res
+        .status(200)
+        .json(new CommonResponse(200, "Email sent successfully", null));
+    } catch (err) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+
+      console.error("Forgot password email error:", err);
+      return res
+        .status(500)
+        .json(new CommonResponse(500, "Email could not be sent", null));
+    }
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "New password is required", null));
+    }
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    const user = await userModel.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid or expired reset token", null));
+    }
+
+    // Set new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Password reset successful", null));
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+module.exports = {
+  login,
+  signup,
+  refreshAccessToken,
+  logout,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+};
