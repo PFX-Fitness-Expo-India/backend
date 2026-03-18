@@ -40,6 +40,10 @@ const eventSchema = new mongoose.Schema({
     type: String,
     enum: ["online", "offline"],
   },
+  isActive: {
+    type: Boolean,
+    default: false,
+  },
   haveSubcategory: {
     type: Boolean,
     enum: [true, false],

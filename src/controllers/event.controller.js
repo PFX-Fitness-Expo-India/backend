@@ -1,6 +1,41 @@
 const eventModel = require("../models/event.model");
 const CommonResponse = require("../utils/common.response");
 
+const updateEventActiveStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await eventModel.findByIdAndUpdate(
+      id,
+      { $bit: { isActive: { xor: 1 } } },
+      { new: true },
+    );
+    if (!event) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Event not found", null));
+    }
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(
+          200,
+          "Event active status updated successfully",
+          event,
+        ),
+      );
+  } catch (error) {
+    console.error("Update event active status error:", error);
+    if (error.name === "CastError") {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid Event ID format", null));
+    }
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 const createEvent = async (req, res) => {
   try {
     const {
@@ -39,9 +74,7 @@ const createEvent = async (req, res) => {
   } catch (error) {
     console.error("Create event error:", error);
     if (error.name === "ValidationError") {
-      return res
-        .status(400)
-        .json(new CommonResponse(400, error.message, null));
+      return res.status(400).json(new CommonResponse(400, error.message, null));
     }
     if (error.code === 11000) {
       return res
@@ -154,13 +187,11 @@ const deleteEvent = async (req, res) => {
   }
 };
 
-
-
-
 module.exports = {
   createEvent,
   getEvents,
   getEventById,
   updateEvent,
   deleteEvent,
+  updateEventActiveStatus,
 };
