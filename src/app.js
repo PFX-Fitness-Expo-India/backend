@@ -10,9 +10,7 @@ const athleteRoutes = require("./routes/athlete.route");
 const visitorRoutes = require("./routes/visitor.route");
 const paymentRoutes = require("./routes/payment.route");
 
-console.log("Loading authRoutes...");
 const authRoutes = require("./routes/auth.route");
-console.log("authRoutes loaded.");
 
 connectDB();
 

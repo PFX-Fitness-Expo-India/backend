@@ -302,7 +302,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventName\": \"Powerlifting Championship 2026\",\n    \"eventDate\": \"2026-06-15\",\n    \"eventTime\": \"09:00 AM\",\n    \"eventDescription\": \"An elite powerlifting competition for all weight classes.\",\n    \"eventLocation\": \"New Delhi Exhibition Centre\",\n    \"eventCapacity\": 500,\n    \"eventPrice\": 1500,\n    \"eventImage\": \"https://example.com/event-image.jpg\",\n    \"paymentMethod\": \"online\"\n}",
+							"raw": "{\n    \"eventName\": \"Powerlifting Championship 2026\",\n    \"eventDate\": \"2026-06-15\",\n    \"eventTime\": \"09:00 AM\",\n    \"eventDescription\": \"An elite powerlifting competition for all weight classes.\",\n    \"eventLocation\": \"New Delhi Exhibition Centre\",\n    \"eventCapacity\": 500,\n    \"eventPrice\": 1500,\n    \"eventImage\": \"https://example.com/event-image.jpg\",\n    \"paymentMethod\": \"online\",\n    \"isActive\": false\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -427,6 +427,36 @@
 					"response": []
 				},
 				{
+					"name": "Toggle Event Active Status (Admin Only)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/events/active/{{eventId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"events",
+								"active",
+								"{{eventId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create Event with Subcategories (Admin Only)",
 					"request": {
 						"auth": {
@@ -443,7 +473,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventName\": \"Bodybuilding Expo 2026\",\n    \"eventDate\": \"2026-07-20\",\n    \"eventTime\": \"10:00 AM\",\n    \"eventDescription\": \"Grand bodybuilding expo.\",\n    \"eventLocation\": \"Mumbai Convention Centre\",\n    \"eventCapacity\": 1000,\n    \"eventPrice\": 2500,\n    \"eventImage\": \"https://example.com/expo.jpg\",\n    \"paymentMethod\": \"online\",\n    \"haveSubcategory\": true,\n    \"subcategories\": [\n        { \"name\": \"Men's Physique\" },\n        { \"name\": \"Classic Physique\" },\n        { \"name\": \"Open Bodybuilding\" }\n    ]\n}",
+							"raw": "{\n    \"eventName\": \"Bodybuilding Expo 2026\",\n    \"eventDate\": \"2026-07-20\",\n    \"eventTime\": \"10:00 AM\",\n    \"eventDescription\": \"Grand bodybuilding expo.\",\n    \"eventLocation\": \"Mumbai Convention Centre\",\n    \"eventCapacity\": 1000,\n    \"eventPrice\": 2500,\n    \"eventImage\": \"https://example.com/expo.jpg\",\n    \"paymentMethod\": \"online\",\n    \"isActive\": false,\n    \"haveSubcategory\": true,\n    \"subcategories\": [\n        { \"name\": \"Men's Physique\" },\n        { \"name\": \"Classic Physique\" },\n        { \"name\": \"Open Bodybuilding\" }\n    ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1029,6 +1059,35 @@
 					"response": []
 				},
 				{
+					"name": "Get Payment By ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/{{paymentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"payments",
+								"{{paymentId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update Payment Status (Admin)",
 					"request": {
 						"auth": {
@@ -1062,6 +1121,40 @@
 								"payments",
 								"{{paymentId}}",
 								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Razorpay Webhook (Simulated)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-razorpay-signature",
+								"value": "your_hmac_sha256_signature_here",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event\": \"payment.captured\",\n    \"payload\": {\n        \"payment\": {\n            \"entity\": {\n                \"id\": \"pay_P1l5S2j9K8z1Lp\",\n                \"order_id\": \"order_P1l5HnKxY5s4Nf\",\n                \"amount\": 150000,\n                \"currency\": \"INR\",\n                \"status\": \"captured\"\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/webhook",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"payments",
+								"webhook"
 							]
 						}
 					},
