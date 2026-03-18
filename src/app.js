@@ -11,6 +11,7 @@ const visitorRoutes = require("./routes/visitor.route");
 const paymentRoutes = require("./routes/payment.route");
 
 const authRoutes = require("./routes/auth.route");
+const ticketRoutes = require("./routes/ticket.route");
 
 connectDB();
 
@@ -43,6 +44,7 @@ app.use("/api/athletes", athleteRoutes);
 
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 app.get("/", (req, res) => {
   console.log("Root route hit!");

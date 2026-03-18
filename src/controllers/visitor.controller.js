@@ -1,6 +1,8 @@
 const visitorModel = require("../models/visitor.model");
 const CommonResponse = require("../utils/common.response");
 const userModel = require("../models/user.model");
+const { issueTicket } = require("../utils/ticket.util");
+const eventModel = require("../models/event.model"); // May need eventId
 
 const createVisitor = async (req, res) => {
   try {
@@ -20,6 +22,16 @@ const createVisitor = async (req, res) => {
     });
 
     await visitor.save();
+
+    // Issue ticket (assuming admin creation or immediate issuance)
+    // We need an eventId. For visitors, maybe there's a default event or we get it from body.
+    // Looking at the schema, visitor doesn't have eventId, but athlete does.
+    // However, the Ticket model requires eventId.
+    // I'll check if eventId is in req.body.
+    const { eventId } = req.body;
+    if (eventId) {
+      await issueTicket(userId, eventId, ticketType);
+    }
 
     return res
       .status(201)

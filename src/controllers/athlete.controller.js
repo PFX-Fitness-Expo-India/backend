@@ -2,6 +2,7 @@ const registrationModel = require("../models/registration.model");
 const userModel = require("../models/user.model");
 const eventModel = require("../models/event.model");
 const CommonResponse = require("../utils/common.response");
+const { issueTicket } = require("../utils/ticket.util");
 
 const createRegistration = async (req, res) => {
   try {
@@ -196,6 +197,9 @@ const addAtheleteToEvent = async (req, res) => {
     });
 
     await registration.save();
+
+    // Issue ticket
+    await issueTicket(user._id, eventId, "athlete");
 
     return res
       .status(201)
