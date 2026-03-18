@@ -4,7 +4,7 @@ const CommonResponse = require("../utils/common.response");
 const updateEventActiveStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const event = await eventModel.findById(id);
 
     if (!event) {
@@ -19,17 +19,15 @@ const updateEventActiveStatus = async (req, res) => {
     return res
       .status(200)
       .json(
-        new CommonResponse(
-          200,
-          "Event active status updated successfully",
-          event,
-        ),
+        new CommonResponse(200, "Event active status updated successfully", {
+          isActive: event.isActive,
+        }),
       );
   } catch (error) {
     console.error("Update event active status error details:", {
       message: error.message,
       stack: error.stack,
-      raw: error
+      raw: error,
     });
     if (error.name === "CastError") {
       return res
@@ -38,7 +36,13 @@ const updateEventActiveStatus = async (req, res) => {
     }
     return res
       .status(500)
-      .json(new CommonResponse(500, `Internal server error: ${error.message}`, null));
+      .json(
+        new CommonResponse(
+          500,
+          `Internal server error: ${error.message}`,
+          null,
+        ),
+      );
   }
 };
 
