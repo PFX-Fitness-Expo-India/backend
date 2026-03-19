@@ -1,36 +1,45 @@
-const axios = require("axios");
+const twilio = require("twilio");
 
 /**
- * Sends a WhatsApp message with the ticket details.
- * Currently uses a placeholder for integration with an automated WhatsApp provider (e.g. Twilio, UltraMsg, etc.).
+ * Sends a real WhatsApp message using Twilio API.
  * 
  * @param {string} phone - The user's phone number.
  * @param {string} message - The message text.
- * @param {string} imageUrl - The URL or base64 data of the ticket QR code.
+ * @param {string} imageUrl - The URL of the ticket QR code (Twilio requires a public URL for media).
  */
 const sendWhatsApp = async (phone, message, imageUrl) => {
   try {
-    // Formatting phone number to include country code if not present
-    const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromWhatsApp = process.env.TWILIO_WHATSAPP_FROM; // e.g., 'whatsapp:+14155238886'
 
-    console.log(`[WhatsApp Simulation] To: ${formattedPhone}`);
-    console.log(`[WhatsApp Simulation] Message: ${message}`);
-    if (imageUrl) {
-        console.log(`[WhatsApp Simulation] Media attached (QR Code generated)`);
+    if (!accountSid || !authToken || !fromWhatsApp) {
+      console.warn("[WhatsApp] Twilio credentials not configured. Falling back to simulation.");
+      console.log(`[WhatsApp Simulation] To: ${phone}, Message: ${message}`);
+      return false;
     }
 
-    // In a real integration, you would call an API here.
-    // Examples:
-    // 1. Twilio: 
-    // const client = require('twilio')(sid, auth);
-    // await client.messages.create({ body: message, mediaUrl: imageUrl, from: 'whatsapp:+14155238886', to: `whatsapp:${formattedPhone}` });
-    
-    // 2. UltraMsg/similar:
-    // await axios.post("https://api.ultramsg.com/...", { token: "...", to: formattedPhone, body: message, image: imageUrl });
+    const client = twilio(accountSid, authToken);
+    const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
 
+    const msgOptions = {
+      body: message,
+      from: fromWhatsApp,
+      to: `whatsapp:${formattedPhone}`,
+    };
+
+    // Note: Twilio mediaUrl must be a publicly accessible URL.
+    // Base64 Data URLs are NOT supported by Twilio.
+    // If using base64, you'll need to upload to S3/Cloudinary first.
+    if (imageUrl && imageUrl.startsWith("http")) {
+      msgOptions.mediaUrl = [imageUrl];
+    }
+
+    const response = await client.messages.create(msgOptions);
+    console.log(`[WhatsApp] Message sent successfully via Twilio: ${response.sid}`);
     return true;
   } catch (error) {
-    console.error("WhatsApp delivery failed:", error);
+    console.error("[WhatsApp] Twilio delivery failed:", error.message);
     return false;
   }
 };
