@@ -2,7 +2,6 @@ const ticketModel = require("../models/ticket.model");
 const Counter = require("../models/counter.model");
 const QRCode = require("qrcode");
 const sendEmail = require("./email.util");
-const sendWhatsApp = require("./whatsapp.util");
 const userModel = require("../models/user.model");
 const eventModel = require("../models/event.model");
 
@@ -101,12 +100,7 @@ const issueTicket = async (userId, eventId, ticketType) => {
           console.log(`Ticket email sent to ${user.email}`);
         } catch (emailError) {
           console.warn(`[Ticket Delivery] Email failed for ${user.email}:`, emailError.message);
-          console.log("[Ticket Delivery] Continuing to WhatsApp delivery...");
         }
-
-        // 3. Send WhatsApp
-        await sendWhatsApp(user.phoneNumber, message, qrCodeImage);
-        console.log(`Ticket WhatsApp notification sent to ${user.phoneNumber} via Baileys`);
       }
     } catch (deliveryError) {
       console.error("Warning: Automated ticket delivery failed but ticket was saved:", deliveryError);

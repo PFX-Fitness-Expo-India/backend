@@ -1223,6 +1223,35 @@
 					"response": []
 				},
 				{
+					"name": "Get My Tickets",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/tickets/my-tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tickets",
+								"my-tickets"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get User Tickets",
 					"request": {
 						"auth": {

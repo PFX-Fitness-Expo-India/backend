@@ -93,9 +93,27 @@ const updateTicketStatus = async (req, res) => {
   }
 };
 
+const getMyTickets = async (req, res) => {
+  try {
+    const userId = req.user.id; // Or req.user._id depending on your token payload
+    const tickets = await ticketModel.find({ userId })
+      .populate("eventId", "eventName eventDate");
+
+    return res.status(200).json(
+      new CommonResponse(200, "Your tickets fetched successfully", tickets)
+    );
+  } catch (error) {
+    console.error("Get my tickets error:", error);
+    return res.status(500).json(
+      new CommonResponse(500, "Internal server error", null)
+    );
+  }
+};
+
 module.exports = {
   getTickets,
   getTicketById,
   getTicketsByUserId,
+  getMyTickets,
   updateTicketStatus,
 };
