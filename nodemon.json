@@ -1,0 +1,5 @@
+{
+  "ignore": ["auth_info_baileys/*", "node_modules/*", ".git/*"],
+  "watch": ["src", "server.js"],
+  "ext": "js,json"
+}
