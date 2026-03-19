@@ -1,5 +1,10 @@
 const ticketModel = require("../models/ticket.model");
 const Counter = require("../models/counter.model");
+const QRCode = require("qrcode");
+const sendEmail = require("./email.util");
+const sendWhatsApp = require("./whatsapp.util");
+const userModel = require("../models/user.model");
+const eventModel = require("../models/event.model");
 
 /**
  * Generates a unique ticket ID using a counter.
@@ -46,6 +51,61 @@ const issueTicket = async (userId, eventId, ticketType) => {
 
     await ticket.save();
     console.log(`Ticket issued successfully: ${ticketId}`);
+
+    // --- Automated Delivery Workflow ---
+    try {
+      const user = await userModel.findById(userId);
+      const event = await eventModel.findById(eventId);
+      
+      if (user && event) {
+        // 1. Generate QR Code Image (Data URL)
+        const qrCodeImage = await QRCode.toDataURL(qrCodeData);
+
+        const eventName = event.eventName || "PFX Fitness Expo";
+        const message = `Hello ${user.userName}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${ticketId}\nType: ${ticketType}`;
+
+        // 2. Send Email
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+            <h2 style="color: #333; text-align: center;">Ticket Issued Successfully!</h2>
+            <p>Hello <strong>${user.userName}</strong>,</p>
+            <p>Your ticket for <strong>${eventName}</strong> is ready.</p>
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Ticket ID:</strong> ${ticketId}</p>
+              <p><strong>Type:</strong> ${ticketType.toUpperCase()}</p>
+              <p><strong>Event:</strong> ${eventName}</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+              <p>Scan this QR code at the entry:</p>
+              <img src="cid:qrcode" alt="Ticket QR Code" style="width: 200px; height: 200px;" />
+            </div>
+            <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">Team PFX Fitness Expo India</p>
+          </div>
+        `;
+
+        await sendEmail({
+          email: user.email,
+          subject: `Your Ticket for ${eventName}`,
+          message: message,
+          html: html,
+          attachments: [
+            {
+              filename: 'ticket-qr.png',
+              path: qrCodeImage,
+              cid: 'qrcode' // Matches the src="cid:qrcode" in HTML
+            }
+          ]
+        });
+        console.log(`Ticket email sent to ${user.email}`);
+
+        // 3. Send WhatsApp
+        await sendWhatsApp(user.phoneNumber, message, qrCodeImage);
+        console.log(`Ticket WhatsApp notification simulated for ${user.phoneNumber}`);
+      }
+    } catch (deliveryError) {
+      console.error("Warning: Automated ticket delivery failed but ticket was saved:", deliveryError);
+    }
+
     return ticket;
   } catch (error) {
     console.error("Error issuing ticket:", error);
