@@ -1,45 +1,33 @@
-const twilio = require("twilio");
+const { sendMessage } = require("./baileys.util");
 
 /**
- * Sends a real WhatsApp message using Twilio API.
+ * Sends a WhatsApp message using Baileys.
  * 
  * @param {string} phone - The user's phone number.
  * @param {string} message - The message text.
- * @param {string} imageUrl - The URL of the ticket QR code (Twilio requires a public URL for media).
+ * @param {string} imageUrl - The URL or path of the ticket QR code.
  */
 const sendWhatsApp = async (phone, message, imageUrl) => {
   try {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromWhatsApp = process.env.TWILIO_WHATSAPP_FROM; // e.g., 'whatsapp:+14155238886'
+    // Basic phone formatting for Baileys (strip '+' and add '91' if 10 digits)
+    let formattedPhone = phone;
+    if (phone.startsWith("+")) {
+      formattedPhone = phone.substring(1);
+    } else if (phone.length === 10) {
+      formattedPhone = `91${phone}`;
+    }
 
-    if (!accountSid || !authToken || !fromWhatsApp) {
-      console.warn("[WhatsApp] Twilio credentials not configured. Falling back to simulation.");
-      console.log(`[WhatsApp Simulation] To: ${phone}, Message: ${message}`);
+    const success = await sendMessage(formattedPhone, message, imageUrl);
+    
+    if (success) {
+      console.log(`[WhatsApp] Message sent successfully via Baileys to ${phone}`);
+      return true;
+    } else {
+      console.warn("[WhatsApp] Baileys delivery failed. Ensure WhatsApp is linked.");
       return false;
     }
-
-    const client = twilio(accountSid, authToken);
-    const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
-
-    const msgOptions = {
-      body: message,
-      from: fromWhatsApp,
-      to: `whatsapp:${formattedPhone}`,
-    };
-
-    // Note: Twilio mediaUrl must be a publicly accessible URL.
-    // Base64 Data URLs are NOT supported by Twilio.
-    // If using base64, you'll need to upload to S3/Cloudinary first.
-    if (imageUrl && imageUrl.startsWith("http")) {
-      msgOptions.mediaUrl = [imageUrl];
-    }
-
-    const response = await client.messages.create(msgOptions);
-    console.log(`[WhatsApp] Message sent successfully via Twilio: ${response.sid}`);
-    return true;
   } catch (error) {
-    console.error("[WhatsApp] Twilio delivery failed:", error.message);
+    console.error("[WhatsApp] Error sending message via Baileys:", error.message);
     return false;
   }
 };

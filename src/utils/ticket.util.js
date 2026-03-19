@@ -83,24 +83,30 @@ const issueTicket = async (userId, eventId, ticketType) => {
           </div>
         `;
 
-        await sendEmail({
-          email: user.email,
-          subject: `Your Ticket for ${eventName}`,
-          message: message,
-          html: html,
-          attachments: [
-            {
-              filename: 'ticket-qr.png',
-              path: qrCodeImage,
-              cid: 'qrcode' // Matches the src="cid:qrcode" in HTML
-            }
-          ]
-        });
-        console.log(`Ticket email sent to ${user.email}`);
+        // 2. Send Email
+        try {
+          await sendEmail({
+            email: user.email,
+            subject: `Your Ticket for ${eventName}`,
+            message: message,
+            html: html,
+            attachments: [
+              {
+                filename: 'ticket-qr.png',
+                path: qrCodeImage,
+                cid: 'qrcode' // Matches the src="cid:qrcode" in HTML
+              }
+            ]
+          });
+          console.log(`Ticket email sent to ${user.email}`);
+        } catch (emailError) {
+          console.warn(`[Ticket Delivery] Email failed for ${user.email}:`, emailError.message);
+          console.log("[Ticket Delivery] Continuing to WhatsApp delivery...");
+        }
 
         // 3. Send WhatsApp
         await sendWhatsApp(user.phoneNumber, message, qrCodeImage);
-        console.log(`Ticket WhatsApp notification simulated for ${user.phoneNumber}`);
+        console.log(`Ticket WhatsApp notification sent to ${user.phoneNumber} via Baileys`);
       }
     } catch (deliveryError) {
       console.error("Warning: Automated ticket delivery failed but ticket was saved:", deliveryError);
