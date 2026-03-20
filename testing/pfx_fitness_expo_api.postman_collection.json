@@ -515,7 +515,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"paymentMethod\": \"online\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
