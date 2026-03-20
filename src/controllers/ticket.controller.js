@@ -95,7 +95,7 @@ const updateTicketStatus = async (req, res) => {
 
 const getMyTickets = async (req, res) => {
   try {
-    const userId = req.user.id; // Or req.user._id depending on your token payload
+    const userId = req.user.userId;
     const tickets = await ticketModel.find({ userId })
       .populate("eventId", "eventName eventDate");
 
