@@ -15,7 +15,7 @@ const razorpay = new Razorpay({
 
 const createOrder = async (req, res) => {
   try {
-    const { userId, eventId, amount } = req.body;
+    const { userId, eventId, amount, registrationId, visitorId } = req.body;
 
     if (!amount) {
       return res
@@ -45,6 +45,8 @@ const createOrder = async (req, res) => {
       paymentMethod: "Razorpay",
       razorpayOrderId: order.id,
       paymentStatus: "pending",
+      registrationId,
+      visitorId,
     });
 
     await payment.save();
@@ -82,10 +84,17 @@ const verifyPayment = async (req, res) => {
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body.toString())
       .digest("hex");
-
+    
     const isSignatureValid = expectedSignature === razorpay_signature;
-
+    
     if (isSignatureValid) {
+      const existingPayment = await paymentModel.findOne({ razorpayOrderId: razorpay_order_id });
+      if (existingPayment && existingPayment.paymentStatus === "completed") {
+        return res
+          .status(200)
+          .json(new CommonResponse(200, "Payment already verified", null));
+      }
+
       const updatedPayment = await paymentModel.findOneAndUpdate(
         { razorpayOrderId: razorpay_order_id },
         {
@@ -101,27 +110,44 @@ const verifyPayment = async (req, res) => {
         const user = await userModel.findById(updatedPayment.userId);
         if (user) {
           let ticketType = "standard";
-          if (user.role === "athlete") {
-            const athleteRegistration = await registrationModel.findOneAndUpdate(
-              { userId: user._id, eventId: updatedPayment.eventId },
+          if (updatedPayment.registrationId) {
+            const athleteRegistration = await registrationModel.findByIdAndUpdate(
+              updatedPayment.registrationId,
               { paymentStatus: "completed" },
               { new: true }
             );
             if (athleteRegistration) {
               ticketType = "athlete";
-            } else {
-              // Registration record not found for this event
-              console.warn(`Athlete registration not found for user ${user._id} and event ${updatedPayment.eventId}`);
-              return res.status(200).json(new CommonResponse(200, "Payment verified but registration record missing", null));
             }
-          } else {
-            const visitor = await visitorModel.findOneAndUpdate(
-              { userId: user._id, eventId: updatedPayment.eventId },
+          } else if (updatedPayment.visitorId) {
+            const visitor = await visitorModel.findByIdAndUpdate(
+              updatedPayment.visitorId,
               { paymentStatus: "completed" },
               { new: true }
             );
             if (visitor) {
               ticketType = visitor.ticketType;
+            }
+          } else {
+            // Fallback for backward compatibility or direct payments
+            if (user.role === "athlete") {
+              const athleteRegistration = await registrationModel.findOneAndUpdate(
+                { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                { paymentStatus: "completed" },
+                { new: true }
+              );
+              if (athleteRegistration) {
+                ticketType = "athlete";
+              }
+            } else {
+              const visitor = await visitorModel.findOneAndUpdate(
+                { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                { paymentStatus: "completed" },
+                { new: true }
+              );
+              if (visitor) {
+                ticketType = visitor.ticketType;
+              }
             }
           }
           await issueTicket(user._id, updatedPayment.eventId, ticketType);
@@ -144,7 +170,7 @@ const verifyPayment = async (req, res) => {
   }
 };
 
-const razorpayWebhook = (req, res) => {
+const razorpayWebhook = async (req, res) => {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
@@ -157,6 +183,13 @@ const razorpayWebhook = (req, res) => {
 
       if (event === "payment.captured") {
         const payment = req.body.payload.payment.entity;
+
+        // Check if payment already completed to prevent duplicate ticket issuance
+        const existingPayment = await paymentModel.findOne({ razorpayPaymentId: payment.id });
+        if (existingPayment && existingPayment.paymentStatus === "completed") {
+            console.log("Webhook: Payment already marked as completed, skipping ticket issuance:", payment.id);
+            return res.status(200).send("OK");
+        }
 
         paymentModel
           .findOneAndUpdate(
@@ -171,26 +204,44 @@ const razorpayWebhook = (req, res) => {
               const user = await userModel.findById(updatedPayment.userId);
               if (user) {
                 let ticketType = "standard"; // Default fallback
-                if (user.role === "athlete") {
-                  const athleteRegistration = await registrationModel.findOneAndUpdate(
-                    { userId: user._id, eventId: updatedPayment.eventId },
+                if (updatedPayment.registrationId) {
+                  const athleteRegistration = await registrationModel.findByIdAndUpdate(
+                    updatedPayment.registrationId,
                     { paymentStatus: "completed" },
                     { new: true }
                   );
                   if (athleteRegistration) {
                     ticketType = "athlete";
-                  } else {
-                    console.warn(`Webhook: Athlete registration not found for user ${user._id} and event ${updatedPayment.eventId}`);
-                    return; // Stop processing this webhook payload
                   }
-                } else {
-                  const visitor = await visitorModel.findOneAndUpdate(
-                    { userId: user._id, eventId: updatedPayment.eventId },
+                } else if (updatedPayment.visitorId) {
+                  const visitor = await visitorModel.findByIdAndUpdate(
+                    updatedPayment.visitorId,
                     { paymentStatus: "completed" },
                     { new: true }
                   );
                   if (visitor) {
                     ticketType = visitor.ticketType;
+                  }
+                } else {
+                  // Fallback
+                  if (user.role === "athlete") {
+                    const athleteRegistration = await registrationModel.findOneAndUpdate(
+                      { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                      { paymentStatus: "completed" },
+                      { new: true }
+                    );
+                    if (athleteRegistration) {
+                      ticketType = "athlete";
+                    }
+                  } else {
+                    const visitor = await visitorModel.findOneAndUpdate(
+                      { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                      { paymentStatus: "completed" },
+                      { new: true }
+                    );
+                    if (visitor) {
+                      ticketType = visitor.ticketType;
+                    }
                   }
                 }
                 await issueTicket(user._id, updatedPayment.eventId, ticketType);

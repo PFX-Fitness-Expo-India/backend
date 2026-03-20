@@ -20,6 +20,14 @@ const paymentSchema = new mongoose.Schema({
   razorpayOrderId: String,
   razorpayPaymentId: String,
   razorpaySignature: String,
+  registrationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Registration",
+  },
+  visitorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Visitor",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
