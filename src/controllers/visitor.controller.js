@@ -21,24 +21,23 @@ const createVisitor = async (req, res) => {
         .json(new CommonResponse(404, "User not found", null));
     }
 
-    // Check for existing registration for this user and event
-    const existingVisitor = await visitorModel.findOne({ userId, eventId });
+    // Check for existing pending registration for this user, event and ticketType to avoid duplicates
+    const existingPendingVisitor = await visitorModel.findOne({
+      userId,
+      eventId,
+      ticketType,
+      paymentStatus: "pending"
+    });
 
-    if (existingVisitor) {
-      if (existingVisitor.paymentStatus === "completed") {
-        return res
-          .status(400)
-          .json(new CommonResponse(400, "User is already registered for this event", existingVisitor));
-      }
-      
-      // If pending, updating the ticketType if changed
-      existingVisitor.ticketType = ticketType;
-      await existingVisitor.save();
-
+    if (existingPendingVisitor) {
+      // If a pending registration for the exact ticketType already exists, return it
       return res
         .status(200)
-        .json(new CommonResponse(200, "Pending registration updated", existingVisitor));
+        .json(new CommonResponse(200, "Pending registration for this ticket type already exists", existingPendingVisitor));
     }
+
+    // If a completed registration exists, we still allow creating a new one (e.g., for a different ticket type)
+    // If a pending registration for a *different* ticket type exists, we also allow creating a new one.
 
     const visitor = new visitorModel({
       userId,

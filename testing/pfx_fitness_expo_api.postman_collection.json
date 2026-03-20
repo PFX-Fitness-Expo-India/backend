@@ -971,7 +971,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"amount\": 1500\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"amount\": 1500,\n    \"registrationId\": \"{{registrationId}}\",\n    \"visitorId\": \"{{visitorId}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
