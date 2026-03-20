@@ -6,7 +6,29 @@ const { issueTicket } = require("../utils/ticket.util");
 
 const createRegistration = async (req, res) => {
   try {
-    const { userId, eventId, age, gender, weight } = req.body;
+    const { userId, eventId, age, gender, weight, paymentMethod } = req.body;
+
+    // Check for existing registration for this user and event
+    const existingRegistration = await registrationModel.findOne({ userId, eventId });
+
+    if (existingRegistration) {
+      if (existingRegistration.paymentStatus === "completed") {
+        return res
+          .status(400)
+          .json(new CommonResponse(400, "User is already registered for this event", existingRegistration));
+      }
+      
+      // If pending, update the registration details
+      existingRegistration.age = age;
+      existingRegistration.gender = gender;
+      existingRegistration.weight = weight;
+      existingRegistration.paymentMethod = paymentMethod || "online";
+      await existingRegistration.save();
+
+      return res
+        .status(200)
+        .json(new CommonResponse(200, "Pending registration updated", existingRegistration));
+    }
 
     const registration = new registrationModel({
       userId,
@@ -15,17 +37,18 @@ const createRegistration = async (req, res) => {
       gender,
       weight,
       status: "pending",
+      paymentMethod: paymentMethod || "online",
+      paymentStatus: "pending",
     });
 
     await registration.save();
 
-    
     return res
       .status(201)
       .json(
         new CommonResponse(
           201,
-          "Registration created successfully",
+          "Registration initiated successfully",
           registration,
         ),
       );
@@ -194,12 +217,16 @@ const addAtheleteToEvent = async (req, res) => {
       gender,
       weight,
       status: "pending",
+      paymentMethod: paymentMethod || "offline",
+      paymentStatus: paymentMethod === "online" ? "pending" : "completed",
     });
 
     await registration.save();
 
-    // Issue ticket
-    await issueTicket(user._id, eventId, "athlete");
+    // Issue ticket immediately only if not online payment
+    if (paymentMethod !== "online") {
+      await issueTicket(user._id, eventId, "athlete");
+    }
 
     return res
       .status(201)

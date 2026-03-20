@@ -58,22 +58,23 @@ const createOrder = async (req, res) => {
       code: error.code,
       description: error.description,
       metadata: error.metadata,
-      raw: error
+      raw: error,
     });
-    const errorMessage = error.message || (typeof error === 'string' ? error : JSON.stringify(error));
+    const errorMessage =
+      error.message ||
+      (typeof error === "string" ? error : JSON.stringify(error));
     return res
       .status(500)
-      .json(new CommonResponse(500, `Internal server error: ${errorMessage}`, null));
+      .json(
+        new CommonResponse(500, `Internal server error: ${errorMessage}`, null),
+      );
   }
 };
 
 const verifyPayment = async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
@@ -93,18 +94,32 @@ const verifyPayment = async (req, res) => {
           paymentStatus: "completed",
           updatedAt: Date.now(),
         },
-        { new: true }
+        { new: true },
       );
 
       if (updatedPayment) {
-        // Issue ticket
         const user = await userModel.findById(updatedPayment.userId);
         if (user) {
-          let ticketType = "standard"; // Default fallback
+          let ticketType = "standard";
           if (user.role === "athlete") {
-            ticketType = "athlete";
+            const athleteRegistration = await registrationModel.findOneAndUpdate(
+              { userId: user._id, eventId: updatedPayment.eventId },
+              { paymentStatus: "completed" },
+              { new: true }
+            );
+            if (athleteRegistration) {
+              ticketType = "athlete";
+            } else {
+              // Registration record not found for this event
+              console.warn(`Athlete registration not found for user ${user._id} and event ${updatedPayment.eventId}`);
+              return res.status(200).json(new CommonResponse(200, "Payment verified but registration record missing", null));
+            }
           } else {
-            const visitor = await visitorModel.findOne({ userId: user._id });
+            const visitor = await visitorModel.findOneAndUpdate(
+              { userId: user._id, eventId: updatedPayment.eventId },
+              { paymentStatus: "completed" },
+              { new: true }
+            );
             if (visitor) {
               ticketType = visitor.ticketType;
             }
@@ -147,7 +162,7 @@ const razorpayWebhook = (req, res) => {
           .findOneAndUpdate(
             { razorpayPaymentId: payment.id },
             { paymentStatus: "completed", updatedAt: Date.now() },
-            { new: true }
+            { new: true },
           )
           .then(async (updatedPayment) => {
             console.log("Payment captured and updated:", payment.id);
@@ -157,9 +172,23 @@ const razorpayWebhook = (req, res) => {
               if (user) {
                 let ticketType = "standard"; // Default fallback
                 if (user.role === "athlete") {
-                  ticketType = "athlete";
+                  const athleteRegistration = await registrationModel.findOneAndUpdate(
+                    { userId: user._id, eventId: updatedPayment.eventId },
+                    { paymentStatus: "completed" },
+                    { new: true }
+                  );
+                  if (athleteRegistration) {
+                    ticketType = "athlete";
+                  } else {
+                    console.warn(`Webhook: Athlete registration not found for user ${user._id} and event ${updatedPayment.eventId}`);
+                    return; // Stop processing this webhook payload
+                  }
                 } else {
-                  const visitor = await visitorModel.findOne({ userId: user._id });
+                  const visitor = await visitorModel.findOneAndUpdate(
+                    { userId: user._id, eventId: updatedPayment.eventId },
+                    { paymentStatus: "completed" },
+                    { new: true }
+                  );
                   if (visitor) {
                     ticketType = visitor.ticketType;
                   }

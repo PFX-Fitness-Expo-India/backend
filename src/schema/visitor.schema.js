@@ -5,6 +5,11 @@ const visitorSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  eventId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Event",
+    required: true,
+  },
   ticketType: {
     required: true,
     type: String,
@@ -13,6 +18,11 @@ const visitorSchema = new mongoose.Schema({
   timeStamp: {
     type: Date,
     default: Date.now,
+  },
+  paymentStatus: {
+    type: String,
+    enum: ["pending", "completed"],
+    default: "pending",
   },
   isAttendingEvent: {
     type: String,
