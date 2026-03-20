@@ -35,6 +35,16 @@ const athleteRegistrationSchema = new mongoose.Schema({
     required: true,
     enum: ["pending", "approved", "rejected"],
   },
+  paymentMethod: {
+    type: String,
+    enum: ["online", "offline"],
+    default: "online",
+  },
+  paymentStatus: {
+    type: String,
+    enum: ["pending", "completed"],
+    default: "pending",
+  },
 });
 
 module.exports = athleteRegistrationSchema;

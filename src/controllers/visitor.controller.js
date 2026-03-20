@@ -6,36 +6,52 @@ const eventModel = require("../models/event.model"); // May need eventId
 
 const createVisitor = async (req, res) => {
   try {
-    const { userId, ticketType } = req.body;
+    const { userId, ticketType, eventId } = req.body;
+
+    if (!eventId) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Event ID is required", null));
+    }
 
     const user = await userModel.findById(userId);
-
     if (!user) {
       return res
         .status(404)
         .json(new CommonResponse(404, "User not found", null));
     }
 
+    // Check for existing registration for this user and event
+    const existingVisitor = await visitorModel.findOne({ userId, eventId });
+
+    if (existingVisitor) {
+      if (existingVisitor.paymentStatus === "completed") {
+        return res
+          .status(400)
+          .json(new CommonResponse(400, "User is already registered for this event", existingVisitor));
+      }
+      
+      // If pending, updating the ticketType if changed
+      existingVisitor.ticketType = ticketType;
+      await existingVisitor.save();
+
+      return res
+        .status(200)
+        .json(new CommonResponse(200, "Pending registration updated", existingVisitor));
+    }
+
     const visitor = new visitorModel({
       userId,
+      eventId,
       ticketType,
+      paymentStatus: "pending",
     });
 
     await visitor.save();
 
-    // Issue ticket (assuming admin creation or immediate issuance)
-    // We need an eventId. For visitors, maybe there's a default event or we get it from body.
-    // Looking at the schema, visitor doesn't have eventId, but athlete does.
-    // However, the Ticket model requires eventId.
-    // I'll check if eventId is in req.body.
-    const { eventId } = req.body;
-    if (eventId) {
-      await issueTicket(userId, eventId, ticketType);
-    }
-
     return res
       .status(201)
-      .json(new CommonResponse(201, "Visitor created successfully", visitor));
+      .json(new CommonResponse(201, "Visitor registration initiated", visitor));
   } catch (error) {
     console.error("Create visitor error:", error);
     return res
@@ -143,7 +159,7 @@ const deleteVisitor = async (req, res) => {
 
 const getVisitorCount = async (req, res) => {
   try {
-    const count = await visitorModel.countDocuments();
+    const count = await visitorModel.countDocuments({ paymentStatus: "completed" });
     return res
       .status(200)
       .json(
