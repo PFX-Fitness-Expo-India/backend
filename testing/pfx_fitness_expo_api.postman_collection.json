@@ -910,6 +910,44 @@
 					"response": []
 				},
 				{
+					"name": "Verify Payment (Demo)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"razorpay_order_id\": \"{{orderId}}\",\n    \"razorpay_payment_id\": \"pay_demo_123\",\n    \"razorpay_signature\": \"bypass_signature_for_demo\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/payments/verify-payment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"payments",
+								"verify-payment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get All Payments (Admin)",
 					"request": {
 						"auth": {

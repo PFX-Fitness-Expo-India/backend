@@ -38,6 +38,8 @@ const createOrder = async (req, res) => {
         .json(new CommonResponse(500, "Failed to create order", null));
     }
 
+    console.log(`[Create Order] Incoming: userId=${userId}, eventId=${eventId}, registrationId=${registrationId}, visitorId=${visitorId}, amount=${amount}`);
+
     const paymentData = {
       userId,
       eventId,
@@ -54,6 +56,7 @@ const createOrder = async (req, res) => {
       paymentData.visitorId = visitorId;
     }
 
+    console.log(`[Create Order] Saving payment record with registrationId: ${paymentData.registrationId}, visitorId: ${paymentData.visitorId}`);
     const payment = new paymentModel(paymentData);
 
     await payment.save();
@@ -104,6 +107,7 @@ const verifyPayment = async (req, res) => {
           .json(new CommonResponse(200, "Payment already verified", null));
       }
 
+      console.log(`[Verify Payment] Processing. Order: ${razorpay_order_id}, Bypass: ${razorpay_signature === "bypass_signature_for_demo"}`);
       const updatedPayment = await paymentModel.findOneAndUpdate(
         { razorpayOrderId: razorpay_order_id },
         {
@@ -115,58 +119,78 @@ const verifyPayment = async (req, res) => {
         { new: true },
       );
 
-      if (updatedPayment) {
-        const user = await userModel.findById(updatedPayment.userId);
-        if (user) {
-          let ticketType = "standard";
-          if (updatedPayment.registrationId) {
-            const athleteRegistration = await registrationModel.findByIdAndUpdate(
-              updatedPayment.registrationId,
+      if (!updatedPayment) {
+        console.error(`[Verify Payment] Payment record not found for orderId: ${razorpay_order_id}`);
+        return res.status(404).json(new CommonResponse(404, "Payment record not found", null));
+      }
+
+      console.log(`[Verify Payment] Payment updated. User: ${updatedPayment.userId}, RegistrationId: ${updatedPayment.registrationId}, VisitorId: ${updatedPayment.visitorId}`);
+
+      const user = await userModel.findById(updatedPayment.userId);
+      if (user) {
+        let ticketType = "standard";
+        if (updatedPayment.registrationId) {
+          console.log(`[Verify Payment] Found registrationId: ${updatedPayment.registrationId}. Updating athlete registration...`);
+          const athleteRegistration = await registrationModel.findByIdAndUpdate(
+            updatedPayment.registrationId,
+            { paymentStatus: "completed" },
+            { new: true }
+          );
+          if (athleteRegistration) {
+            console.log(`[Verify Payment] Athlete registration marked completed.`);
+            ticketType = "athlete";
+          } else {
+            console.warn(`[Verify Payment] Registration record ${updatedPayment.registrationId} not found!`);
+          }
+        } else if (updatedPayment.visitorId) {
+          console.log(`[Verify Payment] Found visitorId: ${updatedPayment.visitorId}. Updating visitor status...`);
+          const visitor = await visitorModel.findByIdAndUpdate(
+            updatedPayment.visitorId,
+            { paymentStatus: "completed" },
+            { new: true }
+          );
+          if (visitor) {
+            console.log(`[Verify Payment] Visitor status marked completed.`);
+            ticketType = visitor.ticketType;
+          } else {
+            console.warn(`[Verify Payment] Visitor record ${updatedPayment.visitorId} not found!`);
+          }
+        } else {
+          console.log(`[Verify Payment] No registrationId or visitorId. Falling back to query...`);
+          // Fallback for backward compatibility or direct payments
+          if (user.role === "athlete") {
+            const query = { userId: user._id, paymentStatus: "pending" };
+            if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+            
+            const athleteRegistration = await registrationModel.findOneAndUpdate(
+              query,
               { paymentStatus: "completed" },
               { new: true }
             );
             if (athleteRegistration) {
               ticketType = "athlete";
+              console.log(`[Verify Payment] Athlete registration found via fallback.`);
             }
-          } else if (updatedPayment.visitorId) {
-            const visitor = await visitorModel.findByIdAndUpdate(
-              updatedPayment.visitorId,
+          } else {
+            const query = { userId: user._id, paymentStatus: "pending" };
+            if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+
+            const visitor = await visitorModel.findOneAndUpdate(
+              query,
               { paymentStatus: "completed" },
               { new: true }
             );
             if (visitor) {
               ticketType = visitor.ticketType;
-            }
-          } else {
-            // Fallback for backward compatibility or direct payments
-            if (user.role === "athlete") {
-              const query = { userId: user._id, paymentStatus: "pending" };
-              if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
-              
-              const athleteRegistration = await registrationModel.findOneAndUpdate(
-                query,
-                { paymentStatus: "completed" },
-                { new: true }
-              );
-              if (athleteRegistration) {
-                ticketType = "athlete";
-              }
-            } else {
-              const query = { userId: user._id, paymentStatus: "pending" };
-              if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
-
-              const visitor = await visitorModel.findOneAndUpdate(
-                query,
-                { paymentStatus: "completed" },
-                { new: true }
-              );
-              if (visitor) {
-                ticketType = visitor.ticketType;
-              }
+              console.log(`[Verify Payment] Visitor found via fallback. Type: ${ticketType}`);
             }
           }
-          await issueTicket(user._id, updatedPayment.eventId, ticketType);
         }
+        
+        console.log(`[Verify Payment] Final Step: Issuing ${ticketType} ticket for user ${user.email}...`);
+        await issueTicket(user._id, updatedPayment.eventId, ticketType);
+      } else {
+        console.error(`[Verify Payment] User record not found for userId: ${updatedPayment.userId}`);
       }
 
       return res
