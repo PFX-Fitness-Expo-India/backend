@@ -20,7 +20,14 @@ const sendEmail = async (options) => {
     attachments: options.attachments || [],
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    console.log(`[Email Util] Sending email to: ${options.email}, Subject: ${options.subject}`);
+    await transporter.sendMail(mailOptions);
+    console.log(`[Email Util] Email sent successfully to: ${options.email}`);
+  } catch (error) {
+    console.error(`[Email Util] Failed to send email to ${options.email}:`, error);
+    throw error;
+  }
 };
 
 module.exports = sendEmail;

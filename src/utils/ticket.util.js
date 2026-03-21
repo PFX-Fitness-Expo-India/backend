@@ -51,58 +51,65 @@ const issueTicket = async (userId, eventId, ticketType) => {
     await ticket.save();
     console.log(`Ticket issued successfully: ${ticketId}`);
 
-    // --- Automated Delivery Workflow (Background) ---
     const deliverTicket = async () => {
       try {
+        console.log(`[Background Delivery] Starting for ticket: ${ticketId}, User: ${userId}`);
         const user = await userModel.findById(userId);
+        if (!user) {
+          console.error(`[Background Delivery] User not found: ${userId}`);
+          return;
+        }
+
         let event = null;
         if (eventId) {
           event = await eventModel.findById(eventId);
         }
         
-        if (user) {
-          // 1. Generate QR Code Image (Data URL)
-          const qrCodeImage = await QRCode.toDataURL(qrCodeData);
+        console.log(`[Background Delivery] Data fetched. Generating QR code...`);
+        const qrCodeImage = await QRCode.toDataURL(qrCodeData);
 
-          const eventName = (event && event.eventName) || "PFX Fitness Expo";
-          const message = `Hello ${user.userName}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${ticketId}\nType: ${ticketType}`;
+        const eventName = (event && event.eventName) || "PFX Fitness Expo";
+        const typeLabel = (ticketType || "standard").toUpperCase();
+        
+        console.log(`[Background Delivery] Preparing email for ${user.email}...`);
+        
+        const message = `Hello ${user.userName || "User"}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${ticketId}\nType: ${typeLabel}`;
 
-          // 2. Send Email
-          const html = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-              <h2 style="color: #333; text-align: center;">Ticket Issued Successfully!</h2>
-              <p>Hello <strong>${user.userName}</strong>,</p>
-              <p>Your ticket for <strong>${eventName}</strong> is ready.</p>
-              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>Ticket ID:</strong> ${ticketId}</p>
-                <p><strong>Type:</strong> ${ticketType.toUpperCase()}</p>
-                <p><strong>Event:</strong> ${eventName}</p>
-              </div>
-              <div style="text-align: center; margin-top: 20px;">
-                <p>Scan this QR code at the entry:</p>
-                <img src="cid:qrcode" alt="Ticket QR Code" style="width: 200px; height: 200px;" />
-              </div>
-              <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">Team PFX Fitness Expo India</p>
+        // 2. Send Email
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+            <h2 style="color: #333; text-align: center;">Ticket Issued Successfully!</h2>
+            <p>Hello <strong>${user.userName || "User"}</strong>,</p>
+            <p>Your ticket for <strong>${eventName}</strong> is ready.</p>
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Ticket ID:</strong> ${ticketId}</p>
+              <p><strong>Type:</strong> ${typeLabel}</p>
+              <p><strong>Event:</strong> ${eventName}</p>
             </div>
-          `;
+            <div style="text-align: center; margin-top: 20px;">
+              <p>Scan this QR code at the entry:</p>
+              <img src="cid:qrcode" alt="Ticket QR Code" style="width: 200px; height: 200px;" />
+            </div>
+            <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">Team PFX Fitness Expo India</p>
+          </div>
+        `;
 
-          await sendEmail({
-            email: user.email,
-            subject: `Your Ticket for ${eventName}`,
-            message: message,
-            html: html,
-            attachments: [
-              {
-                filename: 'ticket-qr.png',
-                path: qrCodeImage,
-                cid: 'qrcode' // Matches the src="cid:qrcode" in HTML
-              }
-            ]
-          });
-          console.log(`Ticket email sent to ${user.email} in background`);
-        }
+        await sendEmail({
+          email: user.email,
+          subject: `Your Ticket for ${eventName}`,
+          message: message,
+          html: html,
+          attachments: [
+            {
+              filename: 'ticket-qr.png',
+              path: qrCodeImage,
+              cid: 'qrcode' // Matches the src="cid:qrcode" in HTML
+            }
+          ]
+        });
+        console.log(`[Background Delivery] Success: Ticket email sent to ${user.email}`);
       } catch (deliveryError) {
-        console.error("[Background Ticket Delivery] Failed:", deliveryError);
+        console.error("[Background Delivery] Failed:", deliveryError);
       }
     };
 
