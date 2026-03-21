@@ -10,7 +10,6 @@ const paymentSchema = new mongoose.Schema({
   eventId: {
     ref: "Event",
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
   },
   amount: Number,
   paymentStatus: String,

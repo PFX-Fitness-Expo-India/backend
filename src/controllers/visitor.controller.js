@@ -8,11 +8,7 @@ const createVisitor = async (req, res) => {
   try {
     const { userId, ticketType, eventId } = req.body;
 
-    if (!eventId) {
-      return res
-        .status(400)
-        .json(new CommonResponse(400, "Event ID is required", null));
-    }
+
 
     const user = await userModel.findById(userId);
     if (!user) {

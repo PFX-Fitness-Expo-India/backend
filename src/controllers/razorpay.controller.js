@@ -138,8 +138,11 @@ const verifyPayment = async (req, res) => {
           } else {
             // Fallback for backward compatibility or direct payments
             if (user.role === "athlete") {
+              const query = { userId: user._id, paymentStatus: "pending" };
+              if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+              
               const athleteRegistration = await registrationModel.findOneAndUpdate(
-                { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                query,
                 { paymentStatus: "completed" },
                 { new: true }
               );
@@ -147,8 +150,11 @@ const verifyPayment = async (req, res) => {
                 ticketType = "athlete";
               }
             } else {
+              const query = { userId: user._id, paymentStatus: "pending" };
+              if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+
               const visitor = await visitorModel.findOneAndUpdate(
-                { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                query,
                 { paymentStatus: "completed" },
                 { new: true }
               );
@@ -232,8 +238,11 @@ const razorpayWebhook = async (req, res) => {
                 } else {
                   // Fallback
                   if (user.role === "athlete") {
+                    const query = { userId: user._id, paymentStatus: "pending" };
+                    if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+
                     const athleteRegistration = await registrationModel.findOneAndUpdate(
-                      { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                      query,
                       { paymentStatus: "completed" },
                       { new: true }
                     );
@@ -241,8 +250,11 @@ const razorpayWebhook = async (req, res) => {
                       ticketType = "athlete";
                     }
                   } else {
+                    const query = { userId: user._id, paymentStatus: "pending" };
+                    if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+
                     const visitor = await visitorModel.findOneAndUpdate(
-                      { userId: user._id, eventId: updatedPayment.eventId, paymentStatus: "pending" },
+                      query,
                       { paymentStatus: "completed" },
                       { new: true }
                     );

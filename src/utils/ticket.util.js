@@ -54,13 +54,16 @@ const issueTicket = async (userId, eventId, ticketType) => {
     // --- Automated Delivery Workflow ---
     try {
       const user = await userModel.findById(userId);
-      const event = await eventModel.findById(eventId);
+      let event = null;
+      if (eventId) {
+        event = await eventModel.findById(eventId);
+      }
       
-      if (user && event) {
+      if (user) {
         // 1. Generate QR Code Image (Data URL)
         const qrCodeImage = await QRCode.toDataURL(qrCodeData);
 
-        const eventName = event.eventName || "PFX Fitness Expo";
+        const eventName = (event && event.eventName) || "PFX Fitness Expo";
         const message = `Hello ${user.userName}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${ticketId}\nType: ${ticketType}`;
 
         // 2. Send Email
