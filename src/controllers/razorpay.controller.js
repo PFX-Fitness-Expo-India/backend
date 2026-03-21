@@ -38,16 +38,23 @@ const createOrder = async (req, res) => {
         .json(new CommonResponse(500, "Failed to create order", null));
     }
 
-    const payment = new paymentModel({
+    const paymentData = {
       userId,
       eventId,
       amount,
       paymentMethod: "Razorpay",
       razorpayOrderId: order.id,
       paymentStatus: "pending",
-      registrationId,
-      visitorId,
-    });
+    };
+
+    if (registrationId && registrationId.trim() !== "") {
+      paymentData.registrationId = registrationId;
+    }
+    if (visitorId && visitorId.trim() !== "") {
+      paymentData.visitorId = visitorId;
+    }
+
+    const payment = new paymentModel(paymentData);
 
     await payment.save();
 
