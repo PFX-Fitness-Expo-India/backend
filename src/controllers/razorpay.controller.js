@@ -14,7 +14,6 @@ const razorpayKeys = {
   webhook_secret: process.env.RAZORPAY_WEBHOOK_SECRET,
 };
 
-// Validate environment variables
 Object.entries(razorpayKeys).forEach(([key, value]) => {
   if (!value) {
     console.error(`CRITICAL ERROR: ${key.toUpperCase()} is not defined in environment variables.`);
