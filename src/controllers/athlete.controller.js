@@ -194,7 +194,7 @@ const getAtheleteCount = async (req, res) => {
 
 const addAtheleteToEvent = async (req, res) => {
   try {
-    const { eventId, userMail, age, gender, weight } = req.body;
+    const { eventId, userMail, age, gender, weight, paymentMethod } = req.body;
 
     const user = await userModel.findOne({ email: userMail });
     if (!user) {
