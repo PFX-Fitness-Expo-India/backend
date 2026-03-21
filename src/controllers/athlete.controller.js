@@ -8,14 +8,12 @@ const createRegistration = async (req, res) => {
   try {
     const { userId, eventId, age, gender, weight, paymentMethod } = req.body;
 
-    // Check for existing pending registration for this user and event to avoid duplicates
     const query = { userId, paymentStatus: "pending" };
     if (eventId) query.eventId = eventId;
     
     const existingPendingRegistration = await registrationModel.findOne(query);
 
     if (existingPendingRegistration) {
-      // If a pending registration already exists, update and return it
       existingPendingRegistration.age = age;
       existingPendingRegistration.gender = gender;
       existingPendingRegistration.weight = weight;
@@ -27,7 +25,6 @@ const createRegistration = async (req, res) => {
         .json(new CommonResponse(200, "Pending registration updated", existingPendingRegistration));
     }
 
-    // If a completed registration exists, we still allow creating a new one (e.g., for a different category/game)
 
     const registrationData = {
       userId,
