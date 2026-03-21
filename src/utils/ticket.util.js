@@ -51,42 +51,41 @@ const issueTicket = async (userId, eventId, ticketType) => {
     await ticket.save();
     console.log(`Ticket issued successfully: ${ticketId}`);
 
-    // --- Automated Delivery Workflow ---
-    try {
-      const user = await userModel.findById(userId);
-      let event = null;
-      if (eventId) {
-        event = await eventModel.findById(eventId);
-      }
-      
-      if (user) {
-        // 1. Generate QR Code Image (Data URL)
-        const qrCodeImage = await QRCode.toDataURL(qrCodeData);
+    // --- Automated Delivery Workflow (Background) ---
+    const deliverTicket = async () => {
+      try {
+        const user = await userModel.findById(userId);
+        let event = null;
+        if (eventId) {
+          event = await eventModel.findById(eventId);
+        }
+        
+        if (user) {
+          // 1. Generate QR Code Image (Data URL)
+          const qrCodeImage = await QRCode.toDataURL(qrCodeData);
 
-        const eventName = (event && event.eventName) || "PFX Fitness Expo";
-        const message = `Hello ${user.userName}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${ticketId}\nType: ${ticketType}`;
+          const eventName = (event && event.eventName) || "PFX Fitness Expo";
+          const message = `Hello ${user.userName}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${ticketId}\nType: ${ticketType}`;
 
-        // 2. Send Email
-        const html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-            <h2 style="color: #333; text-align: center;">Ticket Issued Successfully!</h2>
-            <p>Hello <strong>${user.userName}</strong>,</p>
-            <p>Your ticket for <strong>${eventName}</strong> is ready.</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p><strong>Ticket ID:</strong> ${ticketId}</p>
-              <p><strong>Type:</strong> ${ticketType.toUpperCase()}</p>
-              <p><strong>Event:</strong> ${eventName}</p>
+          // 2. Send Email
+          const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+              <h2 style="color: #333; text-align: center;">Ticket Issued Successfully!</h2>
+              <p>Hello <strong>${user.userName}</strong>,</p>
+              <p>Your ticket for <strong>${eventName}</strong> is ready.</p>
+              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p><strong>Ticket ID:</strong> ${ticketId}</p>
+                <p><strong>Type:</strong> ${ticketType.toUpperCase()}</p>
+                <p><strong>Event:</strong> ${eventName}</p>
+              </div>
+              <div style="text-align: center; margin-top: 20px;">
+                <p>Scan this QR code at the entry:</p>
+                <img src="cid:qrcode" alt="Ticket QR Code" style="width: 200px; height: 200px;" />
+              </div>
+              <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">Team PFX Fitness Expo India</p>
             </div>
-            <div style="text-align: center; margin-top: 20px;">
-              <p>Scan this QR code at the entry:</p>
-              <img src="cid:qrcode" alt="Ticket QR Code" style="width: 200px; height: 200px;" />
-            </div>
-            <p style="font-size: 12px; color: #777; margin-top: 30px; text-align: center;">Team PFX Fitness Expo India</p>
-          </div>
-        `;
+          `;
 
-        // 2. Send Email
-        try {
           await sendEmail({
             email: user.email,
             subject: `Your Ticket for ${eventName}`,
@@ -100,14 +99,15 @@ const issueTicket = async (userId, eventId, ticketType) => {
               }
             ]
           });
-          console.log(`Ticket email sent to ${user.email}`);
-        } catch (emailError) {
-          console.warn(`[Ticket Delivery] Email failed for ${user.email}:`, emailError.message);
+          console.log(`Ticket email sent to ${user.email} in background`);
         }
+      } catch (deliveryError) {
+        console.error("[Background Ticket Delivery] Failed:", deliveryError);
       }
-    } catch (deliveryError) {
-      console.error("Warning: Automated ticket delivery failed but ticket was saved:", deliveryError);
-    }
+    };
+
+    // Run delivery in background without awaiting
+    deliverTicket();
 
     return ticket;
   } catch (error) {

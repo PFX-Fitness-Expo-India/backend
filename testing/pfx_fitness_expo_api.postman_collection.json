@@ -250,6 +250,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -683,7 +712,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"ticketType\": \"gold\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // Optional\n    \"ticketType\": \"gold\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -821,7 +850,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"amount\": 1500,\n    \"registrationId\": \"{{registrationId}}\",\n    \"visitorId\": \"{{visitorId}}\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // Optional for visitors\n    \"amount\": 1500,\n    \"registrationId\": \"{{registrationId}}\",\n    \"visitorId\": \"{{visitorId}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
