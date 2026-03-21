@@ -478,7 +478,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"paymentMethod\": \"online\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // Optional\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"paymentMethod\": \"online\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -572,7 +572,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75\n}",
+							"raw": "{\n    \"eventId\": \"{{eventId}}\", // Optional\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75\n}",
 							"options": {
 								"raw": {
 									"language": "json"

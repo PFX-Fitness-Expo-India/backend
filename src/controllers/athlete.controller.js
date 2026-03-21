@@ -9,11 +9,10 @@ const createRegistration = async (req, res) => {
     const { userId, eventId, age, gender, weight, paymentMethod } = req.body;
 
     // Check for existing pending registration for this user and event to avoid duplicates
-    const existingPendingRegistration = await registrationModel.findOne({ 
-      userId, 
-      eventId,
-      paymentStatus: "pending" 
-    });
+    const query = { userId, paymentStatus: "pending" };
+    if (eventId) query.eventId = eventId;
+    
+    const existingPendingRegistration = await registrationModel.findOne(query);
 
     if (existingPendingRegistration) {
       // If a pending registration already exists, update and return it
@@ -30,16 +29,19 @@ const createRegistration = async (req, res) => {
 
     // If a completed registration exists, we still allow creating a new one (e.g., for a different category/game)
 
-    const registration = new registrationModel({
+    const registrationData = {
       userId,
-      eventId,
       age,
       gender,
       weight,
       status: "pending",
       paymentMethod: paymentMethod || "online",
       paymentStatus: "pending",
-    });
+    };
+
+    if (eventId) registrationData.eventId = eventId;
+
+    const registration = new registrationModel(registrationData);
 
     await registration.save();
 
@@ -203,23 +205,29 @@ const addAtheleteToEvent = async (req, res) => {
         .json(new CommonResponse(404, "User not found", null));
     }
 
-    const event = await eventModel.findById(eventId);
-    if (!event) {
-      return res
-        .status(404)
-        .json(new CommonResponse(404, "Event not found", null));
+    let event = null;
+    if (eventId) {
+      event = await eventModel.findById(eventId);
+      if (!event) {
+        return res
+          .status(404)
+          .json(new CommonResponse(404, "Event not found", null));
+      }
     }
 
-    const registration = new registrationModel({
+    const registrationData = {
       userId: user._id,
-      eventId,
       age,
       gender,
       weight,
       status: "pending",
       paymentMethod: paymentMethod || "offline",
       paymentStatus: paymentMethod === "online" ? "pending" : "completed",
-    });
+    };
+
+    if (eventId) registrationData.eventId = eventId;
+
+    const registration = new registrationModel(registrationData);
 
     await registration.save();
 
