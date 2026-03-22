@@ -279,6 +279,36 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get User Details",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/getUser/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"getUser",
+								"{{userId}}"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -478,7 +508,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // Optional\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"paymentMethod\": \"online\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"paymentMethod\": \"online\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -572,7 +602,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventId\": \"{{eventId}}\", // Optional\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75\n}",
+							"raw": "{\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -712,7 +742,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // Optional\n    \"ticketType\": \"gold\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"ticketType\": \"gold\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -850,7 +880,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // Optional for visitors\n    \"amount\": 1500,\n    \"registrationId\": \"{{registrationId}}\",\n    \"visitorId\": \"{{visitorId}}\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // Required for athletes\n    \"amount\": 1500,\n    \"registrationId\": \"{{registrationId}}\",\n    \"visitorId\": \"{{visitorId}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"

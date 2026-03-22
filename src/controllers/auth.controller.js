@@ -55,7 +55,7 @@ const login = async (req, res) => {
     const accessToken = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "2m" },
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "1d" },
     );
 
     const refreshToken = jwt.sign(
@@ -355,6 +355,35 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const getUserInfo = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid user ID format", null));
+    }
+
+    const user = await userModel.findById(id).select("-password -refreshToken -resetPasswordToken -resetPasswordExpires");
+
+    if (!user) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "User not found", null));
+    }
+
+    return res.status(200).json(
+      new CommonResponse(200, "User information fetched successfully", user),
+    );
+  } catch (error) {
+    console.error("Get user info error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   login,
   signup,
@@ -363,4 +392,5 @@ module.exports = {
   changePassword,
   forgotPassword,
   resetPassword,
+  getUserInfo,
 };
