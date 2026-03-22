@@ -8,8 +8,13 @@ const createRegistration = async (req, res) => {
   try {
     const { userId, eventId, age, gender, weight, paymentMethod } = req.body;
 
-    const query = { userId, paymentStatus: "pending" };
-    if (eventId) query.eventId = eventId;
+    if (!eventId) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Event ID is required for athlete registration", null));
+    }
+
+    const query = { userId, eventId, paymentStatus: "pending" };
     
     const existingPendingRegistration = await registrationModel.findOne(query);
 
@@ -28,6 +33,7 @@ const createRegistration = async (req, res) => {
 
     const registrationData = {
       userId,
+      eventId,
       age,
       gender,
       weight,
@@ -35,8 +41,6 @@ const createRegistration = async (req, res) => {
       paymentMethod: paymentMethod || "online",
       paymentStatus: "pending",
     };
-
-    if (eventId) registrationData.eventId = eventId;
 
     const registration = new registrationModel(registrationData);
 
@@ -291,6 +295,12 @@ const addAtheleteToEvent = async (req, res) => {
   try {
     const { eventId, userMail, age, gender, weight, paymentMethod } = req.body;
 
+    if (!eventId) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Event ID is required to add athlete to event", null));
+    }
+
     const user = await userModel.findOne({ email: userMail });
     if (!user) {
       return res
@@ -310,6 +320,7 @@ const addAtheleteToEvent = async (req, res) => {
 
     const registrationData = {
       userId: user._id,
+      eventId,
       age,
       gender,
       weight,
@@ -317,8 +328,6 @@ const addAtheleteToEvent = async (req, res) => {
       paymentMethod: paymentMethod || "offline",
       paymentStatus: paymentMethod === "online" ? "pending" : "completed",
     };
-
-    if (eventId) registrationData.eventId = eventId;
 
     const registration = new registrationModel(registrationData);
 

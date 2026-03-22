@@ -6,9 +6,7 @@ const eventModel = require("../models/event.model"); // May need eventId
 
 const createVisitor = async (req, res) => {
   try {
-    const { userId, ticketType, eventId } = req.body;
-
-
+    const { userId, ticketType } = req.body;
 
     const user = await userModel.findById(userId);
     if (!user) {
@@ -17,10 +15,9 @@ const createVisitor = async (req, res) => {
         .json(new CommonResponse(404, "User not found", null));
     }
 
-    // Check for existing pending registration for this user, event and ticketType to avoid duplicates
+    // Check for existing pending registration for this user and ticketType to avoid duplicates
     const existingPendingVisitor = await visitorModel.findOne({
       userId,
-      eventId,
       ticketType,
       paymentStatus: "pending"
     });
@@ -37,7 +34,6 @@ const createVisitor = async (req, res) => {
 
     const visitor = new visitorModel({
       userId,
-      eventId,
       ticketType,
       paymentStatus: "pending",
     });
