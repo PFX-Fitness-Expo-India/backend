@@ -1,4 +1,5 @@
 const eventModel = require("../models/event.model");
+const ticketModel = require("../models/ticket.model");
 const CommonResponse = require("../utils/common.response");
 
 const updateEventActiveStatus = async (req, res) => {
@@ -197,6 +198,52 @@ const deleteEvent = async (req, res) => {
   }
 };
 
+const getEventParticipants = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, page = 1, limit = 10 } = req.query;
+
+    const filter = { eventId: id };
+
+    if (type === "athlete") {
+      filter.ticketType = "athlete";
+    } else if (type === "visitor") {
+      filter.ticketType = { $ne: "athlete" };
+    }
+
+    const currentPage = parseInt(page);
+    const currentLimit = parseInt(limit);
+    const skip = (currentPage - 1) * currentLimit;
+
+    const totalCount = await ticketModel.countDocuments(filter);
+    const participants = await ticketModel
+      .find(filter)
+      .populate("userId", "userName email phoneNumber")
+      .sort({ issuedAt: -1 })
+      .skip(skip)
+      .limit(currentLimit);
+
+    const totalPages = Math.ceil(totalCount / currentLimit);
+
+    return res.status(200).json(
+      new CommonResponse(200, "Participants fetched successfully", {
+        participants,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage,
+          limit: currentLimit,
+        },
+      }),
+    );
+  } catch (error) {
+    console.error("Get event participants error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   createEvent,
   getEvents,
@@ -204,4 +251,5 @@ module.exports = {
   updateEvent,
   deleteEvent,
   updateEventActiveStatus,
+  getEventParticipants,
 };

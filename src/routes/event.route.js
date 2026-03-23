@@ -6,6 +6,7 @@ const {
   updateEvent,
   deleteEvent,
   updateEventActiveStatus,
+  getEventParticipants,
 } = require("../controllers/event.controller");
 const { authenticate, authorize } = require("../middlewares/auth.middleware");
 
@@ -22,5 +23,7 @@ router.put(
   authorize("admin"),
   updateEventActiveStatus,
 );
+
+router.get("/:id/participants", authenticate, authorize("admin"), getEventParticipants);
 
 module.exports = router;
