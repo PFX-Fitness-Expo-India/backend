@@ -13,6 +13,7 @@ const paymentRoutes = require("./routes/payment.route");
 const authRoutes = require("./routes/auth.route");
 const ticketRoutes = require("./routes/ticket.route");
 const userRoutes = require("./routes/user.route");
+const statsRoutes = require("./routes/stats.route");
 
 connectDB();
 
@@ -45,6 +46,7 @@ app.use("/api/athletes", athleteRoutes);
 
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/stats", statsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
 

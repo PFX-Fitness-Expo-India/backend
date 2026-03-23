@@ -1418,6 +1418,29 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Stats",
+			"item": [
+				{
+					"name": "Get Expo Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
