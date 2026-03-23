@@ -52,20 +52,24 @@ const createOrder = async (req, res) => {
 
     console.log(`[Create Order] Incoming: userId=${userId}, eventId=${eventId}, registrationId=${registrationId}, visitorId=${visitorId}, amount=${amount}`);
 
+    const mongoose = require("mongoose");
     const paymentData = {
       userId,
-      eventId,
       amount,
       paymentMethod: "Razorpay",
       razorpayOrderId: order.id,
       paymentStatus: "pending",
     };
 
-    if (registrationId && registrationId.trim() !== "") {
-      paymentData.registrationId = registrationId;
+    if (mongoose.Types.ObjectId.isValid(eventId)) {
+      paymentData.eventId = eventId;
     }
-    if (visitorId && visitorId.trim() !== "") {
-      paymentData.visitorId = visitorId;
+
+    if (registrationId && mongoose.Types.ObjectId.isValid(registrationId.trim())) {
+      paymentData.registrationId = registrationId.trim();
+    }
+    if (visitorId && mongoose.Types.ObjectId.isValid(visitorId.trim())) {
+      paymentData.visitorId = visitorId.trim();
     }
 
     console.log(`[Create Order] Saving payment record with registrationId: ${paymentData.registrationId}, visitorId: ${paymentData.visitorId}`);
