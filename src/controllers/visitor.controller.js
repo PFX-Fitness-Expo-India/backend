@@ -187,21 +187,46 @@ const getVisitorCount = async (req, res) => {
 
 const getListOfVisitors = async (req, res) => {
   try {
-    const { page = 1, limit = 10, ticketType, attendance } = req.query;
+    const { page = 1, limit = 10, ticketType, attendance, search } = req.query;
 
     const filter = {};
     if (ticketType) filter.ticketType = ticketType;
-    if (attendance) filter.isAttendingEvent = attendance;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Attendance mapping: present/absent
+    if (attendance === "present") {
+      filter.isAttendingEvent = { $in: ["present", "attending"] };
+    } else if (attendance === "absent") {
+      filter.isAttendingEvent = "notPresent";
+    } else if (attendance) {
+      filter.isAttendingEvent = attendance;
+    }
+
+    // Search mapping: mail or mobile number
+    if (search) {
+      const users = await userModel.find({
+        $or: [
+          { email: { $regex: search, $options: "i" } },
+          { phoneNumber: { $regex: search, $options: "i" } },
+          { userName: { $regex: search, $options: "i" } },
+        ],
+      });
+      const userIds = users.map((u) => u._id);
+      filter.userId = { $in: userIds };
+    }
+
+    const currentPage = parseInt(page);
+    const currentLimit = parseInt(limit);
+    const skip = (currentPage - 1) * currentLimit;
+
     const totalCount = await visitorModel.countDocuments(filter);
     const visitors = await visitorModel
       .find(filter)
-      .populate("userId", "userName email")
+      .populate("userId", "userName email phoneNumber")
+      .sort({ timeStamp: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(currentLimit);
 
-    const totalPages = Math.ceil(totalCount / parseInt(limit));
+    const totalPages = Math.ceil(totalCount / currentLimit);
 
     return res.status(200).json(
       new CommonResponse(200, "Visitors fetched successfully", {
@@ -209,8 +234,8 @@ const getListOfVisitors = async (req, res) => {
         pagination: {
           totalCount,
           totalPages,
-          currentPage: parseInt(page),
-          limit: parseInt(limit),
+          currentPage,
+          limit: currentLimit,
         },
       }),
     );
