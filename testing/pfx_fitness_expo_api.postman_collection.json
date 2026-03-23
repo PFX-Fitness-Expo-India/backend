@@ -406,7 +406,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventPrice\": 2000,\n    \"eventCapacity\": 600\n}",
+							"raw": "{\n    \"eventName\": \"Updated Powerlifting Championship 2026\",\n    \"eventDescription\": \"Updated description for the championship.\",\n    \"eventLocation\": \"Updated Location\",\n    \"eventPrice\": 2000,\n    \"eventCapacity\": 600,\n    \"eventDate\": \"2026-07-20\",\n    \"eventTime\": \"10:00 AM\",\n    \"eventImage\": \"https://example.com/updated-image.jpg\",\n    \"isActive\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1262,6 +1262,107 @@
 								"tickets",
 								"{{ticketId}}",
 								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Visitors (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users?role=visitor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							],
+							"query": [
+								{
+									"key": "role",
+									"value": "visitor"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Athletes (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users?role=athlete",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							],
+							"query": [
+								{
+									"key": "role",
+									"value": "athlete"
+								}
 							]
 						}
 					},
