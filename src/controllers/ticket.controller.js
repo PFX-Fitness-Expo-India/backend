@@ -75,17 +75,24 @@ const updateTicketStatus = async (req, res) => {
         .json(new CommonResponse(400, "Invalid status", null));
     }
 
-    const ticket = await ticketModel.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true },
-    );
+    const ticket = await ticketModel.findById(id);
 
     if (!ticket) {
       return res
         .status(404)
         .json(new CommonResponse(404, "Ticket not found", null));
     }
+
+    if (ticket.ticketType === "athlete") {
+      return res
+        .status(400)
+        .json(
+          new CommonResponse(400, "This is an athlete ticket", ticket),
+        );
+    }
+
+    ticket.status = status;
+    await ticket.save();
 
     return res
       .status(200)
