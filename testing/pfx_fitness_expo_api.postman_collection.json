@@ -406,7 +406,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventPrice\": 2000,\n    \"eventCapacity\": 600\n}",
+							"raw": "{\n    \"eventName\": \"Updated Powerlifting Championship 2026\",\n    \"eventDescription\": \"Updated description for the championship.\",\n    \"eventLocation\": \"Updated Location\",\n    \"eventPrice\": 2000,\n    \"eventCapacity\": 600,\n    \"eventDate\": \"2026-07-20\",\n    \"eventTime\": \"10:00 AM\",\n    \"eventImage\": \"https://example.com/updated-image.jpg\",\n    \"isActive\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"
