@@ -206,7 +206,8 @@ const verifyPayment = async (req, res) => {
         }
         
         console.log(`[Verify Payment] Final Step: Issuing ${ticketType} ticket for user ${user.email}...`);
-        await issueTicket(user._id, updatedPayment.eventId, ticketType);
+        const issuedTicketResult = await issueTicket(user._id, updatedPayment.eventId, ticketType);
+        console.log(`[Verify Payment] issueTicket returned: ${issuedTicketResult ? issuedTicketResult.ticketId : 'null'}`);
       } else {
         console.error(`[Verify Payment] User record not found for userId: ${updatedPayment.userId}`);
       }
@@ -324,7 +325,8 @@ const razorpayWebhook = async (req, res) => {
           }
           
           console.log(`[Razorpay Webhook] Issuing ${ticketType} ticket for user ${user.email}...`);
-          await issueTicket(user._id, updatedPayment.eventId, ticketType);
+          const issuedTicketResult = await issueTicket(user._id, updatedPayment.eventId, ticketType);
+          console.log(`[Razorpay Webhook] issueTicket returned: ${issuedTicketResult ? issuedTicketResult.ticketId : 'null'}`);
         } else {
           console.error(`[Razorpay Webhook] User ${updatedPayment.userId} not found for payment ${razorpayPaymentId}`);
         }

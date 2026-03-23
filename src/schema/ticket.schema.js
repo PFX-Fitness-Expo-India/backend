@@ -48,18 +48,20 @@ ticketSchema.post("save", async function (doc) {
         const sendEmail = require("../utils/email.util");
 
         console.log(
-          `[Ticket Hook] Processing delivery for ticket: ${doc.ticketId}`,
+          `[Ticket Hook] Starting delivery logic for ticket: ${doc.ticketId}`,
         );
 
         const user = await User.findById(doc.userId);
         if (!user) {
-          console.error(`[Ticket Hook] User not found: ${doc.userId}`);
+          console.error(`[Ticket Hook] CRITICAL: User not found for ticket ${doc.ticketId}`);
           return;
         }
+        console.log(`[Ticket Hook] User found: ${user.email}`);
 
         let event = null;
         if (doc.eventId) {
           event = await Event.findById(doc.eventId);
+          console.log(`[Ticket Hook] Event found: ${event ? event.eventName : 'N/A'}`);
         }
 
         const qrCodeImage = await QRCode.toDataURL(doc.qrCodeData);
