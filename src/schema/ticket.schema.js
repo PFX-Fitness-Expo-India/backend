@@ -10,6 +10,7 @@ const ticketSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
+    index: true,
   },
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -32,6 +33,7 @@ const ticketSchema = new mongoose.Schema({
   issuedAt: {
     type: Date,
     default: Date.now,
+    index: true,
   },
 });
 
