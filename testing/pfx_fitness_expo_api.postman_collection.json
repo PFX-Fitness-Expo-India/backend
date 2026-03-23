@@ -428,6 +428,51 @@
 					"response": []
 				},
 				{
+					"name": "Get Event Participants (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/events/{{eventId}}/participants?type=athlete&page=1&limit=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"events",
+								"{{eventId}}",
+								"participants"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "athlete",
+									"description": "athlete or visitor"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Delete Event (Admin Only)",
 					"request": {
 						"auth": {
