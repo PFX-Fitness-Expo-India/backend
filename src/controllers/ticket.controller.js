@@ -3,59 +3,64 @@ const CommonResponse = require("../utils/common.response");
 
 const getTickets = async (req, res) => {
   try {
-    const tickets = await ticketModel.find()
+    const tickets = await ticketModel
+      .find()
       .populate("userId", "userName email phoneNumber")
       .populate("eventId", "eventName eventDate");
-    
-    return res.status(200).json(
-      new CommonResponse(200, "Tickets fetched successfully", tickets)
-    );
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Tickets fetched successfully", tickets));
   } catch (error) {
     console.error("Get tickets error:", error);
-    return res.status(500).json(
-      new CommonResponse(500, "Internal server error", null)
-    );
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
   }
 };
 
 const getTicketById = async (req, res) => {
   try {
     const { id } = req.params;
-    const ticket = await ticketModel.findById(id)
+    const ticket = await ticketModel
+      .findById(id)
       .populate("userId", "userName email phoneNumber")
       .populate("eventId", "eventName eventDate");
 
     if (!ticket) {
-      return res.status(404).json(
-        new CommonResponse(404, "Ticket not found", null)
-      );
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Ticket not found", null));
     }
 
-    return res.status(200).json(
-      new CommonResponse(200, "Ticket fetched successfully", ticket)
-    );
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Ticket fetched successfully", ticket));
   } catch (error) {
     console.error("Get ticket by id error:", error);
-    return res.status(500).json(
-      new CommonResponse(500, "Internal server error", null)
-    );
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
   }
 };
 
 const getTicketsByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
-    const tickets = await ticketModel.find({ userId })
+    const tickets = await ticketModel
+      .find({ userId })
       .populate("eventId", "eventName eventDate");
 
-    return res.status(200).json(
-      new CommonResponse(200, "User tickets fetched successfully", tickets)
-    );
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(200, "User tickets fetched successfully", tickets),
+      );
   } catch (error) {
     console.error("Get tickets by user id error:", error);
-    return res.status(500).json(
-      new CommonResponse(500, "Internal server error", null)
-    );
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
   }
 };
 
@@ -65,48 +70,54 @@ const updateTicketStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!["unused", "used", "cancelled"].includes(status)) {
-      return res.status(400).json(
-        new CommonResponse(400, "Invalid status", null)
-      );
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid status", null));
     }
 
     const ticket = await ticketModel.findByIdAndUpdate(
       id,
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!ticket) {
-      return res.status(404).json(
-        new CommonResponse(404, "Ticket not found", null)
-      );
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Ticket not found", null));
     }
 
-    return res.status(200).json(
-      new CommonResponse(200, "Ticket status updated successfully", ticket)
-    );
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(200, "Ticket status updated successfully", ticket),
+      );
   } catch (error) {
     console.error("Update ticket status error:", error);
-    return res.status(500).json(
-      new CommonResponse(500, "Internal server error", null)
-    );
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
   }
 };
 
 const getMyTickets = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const tickets = await ticketModel.find({ userId })
-      .populate("eventId", "eventName eventDate");
+    const tickets = await ticketModel
+      .find({ userId })
+      .populate("eventId", "eventName eventDate")
+      .sort({ issuedAt: -1 });
 
-    return res.status(200).json(
-      new CommonResponse(200, "Your tickets fetched successfully", tickets)
-    );
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(200, "Your tickets fetched successfully", tickets),
+      );
   } catch (error) {
     console.error("Get my tickets error:", error);
-    return res.status(500).json(
-      new CommonResponse(500, "Internal server error", null)
-    );
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
   }
 };
 
