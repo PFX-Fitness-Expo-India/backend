@@ -19,14 +19,20 @@ const createVisitor = async (req, res) => {
     const existingPendingVisitor = await visitorModel.findOne({
       userId,
       ticketType,
-      paymentStatus: "pending"
+      paymentStatus: "pending",
     });
 
     if (existingPendingVisitor) {
       // If a pending registration for the exact ticketType already exists, return it
       return res
         .status(200)
-        .json(new CommonResponse(200, "Pending registration for this ticket type already exists", existingPendingVisitor));
+        .json(
+          new CommonResponse(
+            200,
+            "Pending registration for this ticket type already exists",
+            existingPendingVisitor,
+          ),
+        );
     }
 
     // If a completed registration exists, we still allow creating a new one (e.g., for a different ticket type)
@@ -126,6 +132,19 @@ const updateVisitorAttendance = async (req, res) => {
   }
 };
 
+const getAllVisitor = async (req, res) => {
+  try {
+    const getUsers = await userModel.find({ role: "visitor" });
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Visitors fetched successfully", getUsers));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 const deleteVisitor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -150,7 +169,9 @@ const deleteVisitor = async (req, res) => {
 
 const getVisitorCount = async (req, res) => {
   try {
-    const count = await visitorModel.countDocuments({ paymentStatus: "completed" });
+    const count = await visitorModel.countDocuments({
+      paymentStatus: "completed",
+    });
     return res
       .status(200)
       .json(
@@ -209,4 +230,5 @@ module.exports = {
   deleteVisitor,
   getVisitorCount,
   getListOfVisitors,
+  getAllVisitor,
 };
