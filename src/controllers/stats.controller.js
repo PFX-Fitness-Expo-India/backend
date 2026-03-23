@@ -1,23 +1,24 @@
 const eventModel = require("../models/event.model");
-const registrationModel = require("../models/registration.model");
-const visitorModel = require("../models/visitor.model");
+const ticketModel = require("../models/ticket.model");
 const CommonResponse = require("../utils/common.response");
 
-
+/**
+ * Get Expo Statistics
+ * GET /api/stats
+ */
 const getStats = async (req, res) => {
   try {
     const [eventCount, athleteCount, visitorCount] = await Promise.all([
       eventModel.countDocuments(),
-      registrationModel.countDocuments(),
-      visitorModel.countDocuments({ paymentStatus: "completed" }),
+      ticketModel.countDocuments({ ticketType: "athlete" }),
+      ticketModel.countDocuments({ ticketType: { $ne: "athlete" } }),
     ]);
 
-    // Constructing the stats object based on the requirements
     const stats = {
       sportsCompetitions: eventCount,
       athletes: athleteCount > 500 ? `${athleteCount}+` : athleteCount,
       visitors: visitorCount,
-      prizePool: "Huge", // Static value as per requirement or could be calculated if field exists
+      prizePool: "Huge",
     };
 
     return res
