@@ -857,6 +857,55 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get List Of Visitors (Enhanced)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/visitors/get-visitors?page=1&limit=10&attendance=present&search=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"visitors",
+								"get-visitors"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "attendance",
+									"value": "present",
+									"description": "Options: present, absent, notPresent, attending"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by email, phone, or name"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
