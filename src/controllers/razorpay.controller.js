@@ -178,7 +178,7 @@ const verifyPayment = async (req, res) => {
             console.warn(`[Verify Payment] Visitor record ${updatedPayment.visitorId} not found!`);
           }
         } else {
-          console.log(`[Verify Payment] No registrationId or visitorId. Falling back to sequential model search...`);
+          console.log(`[Verify Payment] No specific IDs. Falling back to sequential model search...`);
           const query = { userId: user._id, paymentStatus: "pending" };
           if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
 
@@ -200,6 +200,11 @@ const verifyPayment = async (req, res) => {
 
           if (athleteRegistration) {
             ticketType = "athlete";
+            // Use eventId from registration if payment lacked it
+            if (!updatedPayment.eventId && athleteRegistration.eventId) {
+              updatedPayment.eventId = athleteRegistration.eventId;
+              console.log(`[Verify Payment] Using eventId from athlete registration: ${updatedPayment.eventId}`);
+            }
             console.log(`[Verify Payment] Found athlete registration via fallback.`);
           } else {
             // 2. If no athlete registration, try finding a visitor registration
@@ -220,9 +225,14 @@ const verifyPayment = async (req, res) => {
 
             if (visitor) {
               ticketType = visitor.ticketType;
+              // Use eventId from visitor record if payment lacked it
+              if (!updatedPayment.eventId && visitor.eventId) {
+                updatedPayment.eventId = visitor.eventId;
+                console.log(`[Verify Payment] Using eventId from visitor record: ${updatedPayment.eventId}`);
+              }
               console.log(`[Verify Payment] Found visitor via fallback. Type: ${ticketType}`);
             } else {
-              console.warn(`[Verify Payment] No pending registration or visitor record found for user ${user.email}! Defaulting to standard ticket.`);
+              console.warn(`[Verify Payment] CRITICAL: No matching registration found for user ${user.email} (userId: ${user._id})! Fallback search failed.`);
             }
           }
         }
@@ -324,7 +334,7 @@ const razorpayWebhook = async (req, res) => {
             }
           } else {
             // Fallback logic
-            console.log(`[Razorpay Webhook] No registrationId or visitorId. Falling back to sequential model search...`);
+            console.log(`[Razorpay Webhook] No matching IDs. Falling back to sequential model search...`);
             const query = { userId: user._id, paymentStatus: "pending" };
             if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
 
@@ -346,6 +356,10 @@ const razorpayWebhook = async (req, res) => {
 
             if (athleteRegistration) {
               ticketType = "athlete";
+              // Link eventId if missing
+              if (!updatedPayment.eventId && athleteRegistration.eventId) {
+                updatedPayment.eventId = athleteRegistration.eventId;
+              }
               console.log(`[Razorpay Webhook] Found athlete registration via fallback.`);
             } else {
               // 2. If no athlete registration, try finding a visitor registration
@@ -366,9 +380,13 @@ const razorpayWebhook = async (req, res) => {
 
               if (visitor) {
                 ticketType = visitor.ticketType;
+                // Link eventId if missing
+                if (!updatedPayment.eventId && visitor.eventId) {
+                  updatedPayment.eventId = visitor.eventId;
+                }
                 console.log(`[Razorpay Webhook] Found visitor via fallback. Type: ${ticketType}`);
               } else {
-                console.warn(`[Razorpay Webhook] No pending registration or visitor record found for user ${user.email}! Defaulting to standard ticket.`);
+                console.warn(`[Razorpay Webhook] CRITICAL: No matching registration found for payment ${razorpayPaymentId}! Fallback failed.`);
               }
             }
           }
