@@ -52,6 +52,18 @@ const login = async (req, res) => {
         .json(new CommonResponse(401, "Invalid password", null));
     }
 
+    if (!user.isVerified) {
+      return res
+        .status(403)
+        .json(
+          new CommonResponse(
+            403,
+            "Please verify your email address before logging in",
+            null,
+          ),
+        );
+    }
+
     const accessToken = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -129,19 +141,51 @@ const signup = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
     const user = new userModel({
       userName,
       phoneNumber,
       email,
       password: hashedPassword,
       role: role || "visitor",
+      verificationToken,
+      verificationTokenExpires,
     });
 
     await user.save();
 
-    return res
-      .status(201)
-      .json(new CommonResponse(201, "User created successfully", null));
+    // Verification URL
+    const verificationUrl = `${req.protocol}://${req.get("host")}/api/auth/verify-email/${verificationToken}`;
+
+    const message = `Welcome to PFX Fitness Expo! Please verify your email by clicking the link below:\n\n ${verificationUrl}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Email Verification - PFX Fitness Expo",
+        message,
+      });
+
+      return res.status(201).json(
+        new CommonResponse(
+          201,
+          "User created successfully. Please check your email to verify your account.",
+          null,
+        ),
+      );
+    } catch (err) {
+      console.error("Signup email error:", err);
+      // We still created the user, but email failed. User can request resend later if we implement it.
+      return res.status(201).json(
+        new CommonResponse(
+          201,
+          "User created, but verification email could not be sent. Please contact support.",
+          null,
+        ),
+      );
+    }
   } catch (error) {
     console.error("Signup error:", error);
     return res
@@ -384,6 +428,38 @@ const getUserInfo = async (req, res) => {
   }
 };
 
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await userModel.findOne({
+      verificationToken: token,
+      verificationTokenExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid or expired verification token", null));
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+
+    await user.save();
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Email verified successfully. You can now log in.", null));
+  } catch (error) {
+    console.error("Verify email error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 
 module.exports = {
   login,
@@ -394,4 +470,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   getUserInfo,
+  verifyEmail,
 };

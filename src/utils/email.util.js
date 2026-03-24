@@ -16,7 +16,6 @@ const sendEmail = async (options) => {
     });
 
     await transporter.verify();
-    console.log("✅ SMTP Ready");
 
     const info = await transporter.sendMail({
       from: `PFX Fitness Expo <${process.env.EMAIL_USER}>`,
