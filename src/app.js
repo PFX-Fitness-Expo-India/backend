@@ -21,7 +21,22 @@ const app = express();
 
 app.use(helmet());
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : "*",
+  origin: (origin, callback) => {
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(",")
+      : [];
+
+    if (
+      !origin ||
+      allowedOrigins.includes("*") ||
+      allowedOrigins.length === 0 ||
+      allowedOrigins.includes(origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 204,
@@ -52,8 +67,7 @@ app.use("/api/tickets", ticketRoutes);
 
 app.get("/", (req, res) => {
   console.log("Root route hit!");
-  res.send("API is running on port 3001");
+  res.send(`API is running on port ${process.env.PORT || 3000}`);
 });
-
 
 module.exports = app;

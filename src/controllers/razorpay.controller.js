@@ -197,11 +197,22 @@ const verifyPayment = async (req, res) => {
             const query = { userId: user._id, paymentStatus: "pending" };
             if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
 
-            const visitor = await visitorModel.findOneAndUpdate(
+            let visitor = await visitorModel.findOneAndUpdate(
               query,
               { paymentStatus: "completed" },
               { new: true }
             );
+
+            // If not found with eventId, try finding any pending registration for this user
+            if (!visitor && updatedPayment.eventId) {
+              console.log(`[Verify Payment] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
+              visitor = await visitorModel.findOneAndUpdate(
+                { userId: user._id, paymentStatus: "pending" },
+                { paymentStatus: "completed" },
+                { new: true }
+              );
+            }
+
             if (visitor) {
               ticketType = visitor.ticketType;
               console.log(`[Verify Payment] Visitor found via fallback. Type: ${ticketType}`);
@@ -209,8 +220,13 @@ const verifyPayment = async (req, res) => {
           }
         }
         
-        console.log(`[Verify Payment] Final Step: Issuing ${ticketType} ticket for user ${user.email}...`);
-        await issueTicket(user._id, updatedPayment.eventId, ticketType);
+        console.log(`[Verify Payment] Final Step: Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId}...`);
+        const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType);
+        if (issuedTicket) {
+          console.log(`[Verify Payment] Ticket ${issuedTicket.ticketId} issued successfully.`);
+        } else {
+          console.error(`[Verify Payment] Failed to issue ticket for user ${user.email}!`);
+        }
       } else {
         console.error(`[Verify Payment] User record not found for userId: ${updatedPayment.userId}`);
       }
@@ -304,31 +320,34 @@ const razorpayWebhook = async (req, res) => {
             const query = { userId: user._id, paymentStatus: "pending" };
             if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
 
-            if (user.role === "athlete") {
-              const athleteRegistration = await registrationModel.findOneAndUpdate(
-                query,
+            let visitor = await visitorModel.findOneAndUpdate(
+              query,
+              { paymentStatus: "completed" },
+              { new: true }
+            );
+
+            if (!visitor && updatedPayment.eventId) {
+              console.log(`[Razorpay Webhook] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
+              visitor = await visitorModel.findOneAndUpdate(
+                { userId: user._id, paymentStatus: "pending" },
                 { paymentStatus: "completed" },
                 { new: true }
               );
-              if (athleteRegistration) {
-                ticketType = "athlete";
-                console.log(`[Razorpay Webhook] Athlete registration found via fallback.`);
-              }
-            } else {
-              const visitor = await visitorModel.findOneAndUpdate(
-                query,
-                { paymentStatus: "completed" },
-                { new: true }
-              );
-              if (visitor) {
-                ticketType = visitor.ticketType;
-                console.log(`[Razorpay Webhook] Visitor found via fallback. Type: ${ticketType}`);
-              }
+            }
+
+            if (visitor) {
+              ticketType = visitor.ticketType;
+              console.log(`[Razorpay Webhook] Visitor found via fallback. Type: ${ticketType}`);
             }
           }
           
-          console.log(`[Razorpay Webhook] Issuing ${ticketType} ticket for user ${user.email}...`);
-          await issueTicket(user._id, updatedPayment.eventId, ticketType);
+          console.log(`[Razorpay Webhook] Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId}...`);
+          const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType);
+          if (issuedTicket) {
+            console.log(`[Razorpay Webhook] Ticket ${issuedTicket.ticketId} issued successfully.`);
+          } else {
+            console.error(`[Razorpay Webhook] Failed to issue ticket for user ${user.email}!`);
+          }
         } else {
           console.error(`[Razorpay Webhook] User ${updatedPayment.userId} not found for payment ${razorpayPaymentId}`);
         }

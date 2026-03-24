@@ -6,7 +6,7 @@ const eventModel = require("../models/event.model"); // May need eventId
 
 const createVisitor = async (req, res) => {
   try {
-    const { userId, ticketType } = req.body;
+    const { userId, eventId, ticketType } = req.body;
 
     const user = await userModel.findById(userId);
     if (!user) {
@@ -16,11 +16,14 @@ const createVisitor = async (req, res) => {
     }
 
     // Check for existing pending registration for this user and ticketType to avoid duplicates
-    const existingPendingVisitor = await visitorModel.findOne({
+    const query = {
       userId,
       ticketType,
       paymentStatus: "pending",
-    });
+    };
+    if (eventId) query.eventId = eventId;
+
+    const existingPendingVisitor = await visitorModel.findOne(query);
 
     if (existingPendingVisitor) {
       // If a pending registration for the exact ticketType already exists, return it
@@ -38,11 +41,14 @@ const createVisitor = async (req, res) => {
     // If a completed registration exists, we still allow creating a new one (e.g., for a different ticket type)
     // If a pending registration for a *different* ticket type exists, we also allow creating a new one.
 
-    const visitor = new visitorModel({
+    const visitorData = {
       userId,
       ticketType,
       paymentStatus: "pending",
-    });
+    };
+    if (eventId) visitorData.eventId = eventId;
+
+    const visitor = new visitorModel(visitorData);
 
     await visitor.save();
 
