@@ -2,34 +2,38 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const sendEmail = async (options) => {
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: process.env.EMAIL_PORT == 465, // true for 465, false for 587
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  const mailOptions = {
-    from: `PFX Fitness Expo <${process.env.EMAIL_USER}>`,
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-    html: options.html,
-    attachments: options.attachments || [],
-  };
-
   try {
-    console.log(`[Email Util] Sending email to: ${options.email}, Subject: ${options.subject}`);
-    await transporter.sendMail(mailOptions);
-    console.log(`[Email Util] Email sent successfully to: ${options.email}`);
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: Number(process.env.EMAIL_PORT),
+      secure: Number(process.env.EMAIL_PORT) === 465,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.verify();
+    console.log("SMTP connection verified");
+
+    const mailOptions = {
+      from: `PFX Fitness Expo <${process.env.EMAIL_USER}>`,
+      to: options.email,
+      subject: options.subject,
+      text: options.message,
+      html: options.html,
+      attachments: options.attachments || [],
+    };
+
+    console.log(`📧 Sending email to: ${options.email}`);
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("✅ Email sent:", info.response);
+
+    return info;
   } catch (error) {
-    console.error(`[Email Util] Failed to send email to ${options.email}:`, error);
+    console.error("❌ Email sending failed:", error);
     throw error;
   }
 };
