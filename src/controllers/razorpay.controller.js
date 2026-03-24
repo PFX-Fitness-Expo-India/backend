@@ -29,16 +29,22 @@ const createOrder = async (req, res) => {
   try {
     const { userId, eventId, amount, registrationId, visitorId } = req.body;
 
-    if (!amount) {
+    if (!userId) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Amount is required", null));
+        .json(new CommonResponse(400, "User ID is required for payment", null));
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Valid amount is required", null));
     }
 
     const options = {
-      amount: amount * 100,
+      amount: Math.round(Number(amount) * 100), // Ensure it's a valid integer in paise
       currency: "INR",
-      receipt: `receipt_order_${Date.now()}`,
+      receipt: `receipt_${Date.now()}_${userId.slice(-4)}`,
     };
 
     const order = await razorpay.orders.create(options);
