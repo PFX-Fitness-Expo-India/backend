@@ -15,6 +15,8 @@ const ticketRoutes = require("./routes/ticket.route");
 const userRoutes = require("./routes/user.route");
 const statsRoutes = require("./routes/stats.route");
 const sendEmail = require("./utils/email.util");
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
 
 connectDB();
 
