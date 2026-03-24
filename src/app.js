@@ -14,6 +14,7 @@ const authRoutes = require("./routes/auth.route");
 const ticketRoutes = require("./routes/ticket.route");
 const userRoutes = require("./routes/user.route");
 const statsRoutes = require("./routes/stats.route");
+const sendEmail = require("./utils/email.util");
 
 connectDB();
 
@@ -64,6 +65,20 @@ app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
+
+app.get("/test-email", async (req, res) => {
+  try {
+    await sendEmail({
+      email: "717822f253@kce.ac.in",
+      subject: "Test Email",
+      message: "Test successful",
+    });
+
+    res.send("Email sent successfully");
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
 
 app.get("/", (req, res) => {
   console.log("Root route hit!");

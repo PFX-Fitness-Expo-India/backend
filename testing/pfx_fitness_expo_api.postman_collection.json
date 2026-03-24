@@ -1486,6 +1486,28 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Test Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/test-email",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"test-email"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
