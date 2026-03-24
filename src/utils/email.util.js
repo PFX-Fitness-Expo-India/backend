@@ -1,3 +1,5 @@
+
+
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
@@ -14,26 +16,21 @@ const sendEmail = async (options) => {
     });
 
     await transporter.verify();
-    console.log("SMTP connection verified");
+    console.log("✅ SMTP Ready");
 
-    const mailOptions = {
+    const info = await transporter.sendMail({
       from: `PFX Fitness Expo <${process.env.EMAIL_USER}>`,
       to: options.email,
       subject: options.subject,
       text: options.message,
       html: options.html,
       attachments: options.attachments || [],
-    };
-
-    console.log(`📧 Sending email to: ${options.email}`);
-
-    const info = await transporter.sendMail(mailOptions);
+    });
 
     console.log("✅ Email sent:", info.response);
-
     return info;
   } catch (error) {
-    console.error("❌ Email sending failed:", error);
+    console.error("❌ Email Error:", error);
     throw error;
   }
 };

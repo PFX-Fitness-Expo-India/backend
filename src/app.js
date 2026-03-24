@@ -1,3 +1,6 @@
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -15,10 +18,10 @@ const ticketRoutes = require("./routes/ticket.route");
 const userRoutes = require("./routes/user.route");
 const statsRoutes = require("./routes/stats.route");
 const sendEmail = require("./utils/email.util");
-const dns = require("dns");
-dns.setDefaultResultOrder("ipv4first");
+
 
 connectDB();
+
 
 const app = express();
 
@@ -86,5 +89,6 @@ app.get("/", (req, res) => {
   console.log("Root route hit!");
   res.send(`API is running on port ${process.env.PORT || 3000}`);
 });
+
 
 module.exports = app;
