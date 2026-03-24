@@ -29,16 +29,22 @@ const createOrder = async (req, res) => {
   try {
     const { userId, eventId, amount, registrationId, visitorId } = req.body;
 
-    if (!amount) {
+    if (!userId) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Amount is required", null));
+        .json(new CommonResponse(400, "User ID is required for payment", null));
+    }
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Valid amount is required", null));
     }
 
     const options = {
-      amount: amount * 100,
+      amount: Math.round(Number(amount) * 100), // Ensure it's a valid integer in paise
       currency: "INR",
-      receipt: `receipt_order_${Date.now()}`,
+      receipt: `receipt_${Date.now()}_${userId.slice(-4)}`,
     };
 
     const order = await razorpay.orders.create(options);
@@ -178,32 +184,39 @@ const verifyPayment = async (req, res) => {
             console.warn(`[Verify Payment] Visitor record ${updatedPayment.visitorId} not found!`);
           }
         } else {
-          console.log(`[Verify Payment] No registrationId or visitorId. Falling back to query...`);
-          // Fallback for backward compatibility or direct payments
-          if (user.role === "athlete") {
-            const query = { userId: user._id, paymentStatus: "pending" };
-            if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
-            
-            const athleteRegistration = await registrationModel.findOneAndUpdate(
-              query,
+          console.log(`[Verify Payment] No specific IDs. Falling back to sequential model search...`);
+          const query = { userId: user._id, paymentStatus: "pending" };
+          if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+
+          let athleteRegistration = await registrationModel.findOneAndUpdate(
+            query,
+            { paymentStatus: "completed" },
+            { new: true }
+          );
+
+          if (!athleteRegistration && updatedPayment.eventId) {
+            console.log(`[Verify Payment] Athlete not found with eventId. Trying fallback WITHOUT eventId...`);
+            athleteRegistration = await registrationModel.findOneAndUpdate(
+              { userId: user._id, paymentStatus: "pending" },
               { paymentStatus: "completed" },
               { new: true }
             );
-            if (athleteRegistration) {
-              ticketType = "athlete";
-              console.log(`[Verify Payment] Athlete registration found via fallback.`);
-            }
-          } else {
-            const query = { userId: user._id, paymentStatus: "pending" };
-            if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+          }
 
+          if (athleteRegistration) {
+            ticketType = "athlete";
+            if (!updatedPayment.eventId && athleteRegistration.eventId) {
+              updatedPayment.eventId = athleteRegistration.eventId;
+              console.log(`[Verify Payment] Using eventId from athlete registration: ${updatedPayment.eventId}`);
+            }
+            console.log(`[Verify Payment] Found athlete registration via fallback.`);
+          } else {
             let visitor = await visitorModel.findOneAndUpdate(
               query,
               { paymentStatus: "completed" },
               { new: true }
             );
 
-            // If not found with eventId, try finding any pending registration for this user
             if (!visitor && updatedPayment.eventId) {
               console.log(`[Verify Payment] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
               visitor = await visitorModel.findOneAndUpdate(
@@ -215,7 +228,14 @@ const verifyPayment = async (req, res) => {
 
             if (visitor) {
               ticketType = visitor.ticketType;
-              console.log(`[Verify Payment] Visitor found via fallback. Type: ${ticketType}`);
+              // Use eventId from visitor record if payment lacked it
+              if (!updatedPayment.eventId && visitor.eventId) {
+                updatedPayment.eventId = visitor.eventId;
+                console.log(`[Verify Payment] Using eventId from visitor record: ${updatedPayment.eventId}`);
+              }
+              console.log(`[Verify Payment] Found visitor via fallback. Type: ${ticketType}`);
+            } else {
+              console.warn(`[Verify Payment] CRITICAL: No matching registration found for user ${user.email} (userId: ${user._id})! Fallback search failed.`);
             }
           }
         }
@@ -273,18 +293,21 @@ const razorpayWebhook = async (req, res) => {
     if (event === "payment.captured") {
       const paymentEntity = req.body.payload.payment.entity;
       const razorpayPaymentId = paymentEntity.id;
-
-      // Check if payment already completed to prevent duplicate ticket issuance
-      const existingPayment = await paymentModel.findOne({ razorpayPaymentId });
+      const razorpayOrderId = paymentEntity.order_id;
+      const existingPayment = await paymentModel.findOne({ razorpayOrderId });
       
       if (existingPayment && existingPayment.paymentStatus === "completed") {
-        console.log(`[Razorpay Webhook] Payment ${razorpayPaymentId} already marked as completed, skipping.`);
+        console.log(`[Razorpay Webhook] Payment for order ${razorpayOrderId} already marked as completed, skipping.`);
         return res.status(200).send("OK");
       }
 
       const updatedPayment = await paymentModel.findOneAndUpdate(
-        { razorpayPaymentId },
-        { paymentStatus: "completed", updatedAt: Date.now() },
+        { razorpayOrderId },
+        { 
+          razorpayPaymentId, 
+          paymentStatus: "completed", 
+          updatedAt: Date.now() 
+        },
         { new: true }
       );
 
@@ -317,27 +340,57 @@ const razorpayWebhook = async (req, res) => {
             }
           } else {
             // Fallback logic
+            console.log(`[Razorpay Webhook] No matching IDs. Falling back to sequential model search...`);
             const query = { userId: user._id, paymentStatus: "pending" };
             if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
 
-            let visitor = await visitorModel.findOneAndUpdate(
+            // 1. Try finding an athlete registration first
+            let athleteRegistration = await registrationModel.findOneAndUpdate(
               query,
               { paymentStatus: "completed" },
               { new: true }
             );
 
-            if (!visitor && updatedPayment.eventId) {
-              console.log(`[Razorpay Webhook] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
-              visitor = await visitorModel.findOneAndUpdate(
+            if (!athleteRegistration && updatedPayment.eventId) {
+              console.log(`[Razorpay Webhook] Athlete not found with eventId. Trying fallback WITHOUT eventId...`);
+              athleteRegistration = await registrationModel.findOneAndUpdate(
                 { userId: user._id, paymentStatus: "pending" },
                 { paymentStatus: "completed" },
                 { new: true }
               );
             }
 
-            if (visitor) {
-              ticketType = visitor.ticketType;
-              console.log(`[Razorpay Webhook] Visitor found via fallback. Type: ${ticketType}`);
+            if (athleteRegistration) {
+              ticketType = "athlete";
+              if (!updatedPayment.eventId && athleteRegistration.eventId) {
+                updatedPayment.eventId = athleteRegistration.eventId;
+              }
+              console.log(`[Razorpay Webhook] Found athlete registration via fallback.`);
+            } else {
+              let visitor = await visitorModel.findOneAndUpdate(
+                query,
+                { paymentStatus: "completed" },
+                { new: true }
+              );
+
+              if (!visitor && updatedPayment.eventId) {
+                console.log(`[Razorpay Webhook] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
+                visitor = await visitorModel.findOneAndUpdate(
+                  { userId: user._id, paymentStatus: "pending" },
+                  { paymentStatus: "completed" },
+                  { new: true }
+                );
+              }
+
+              if (visitor) {
+                ticketType = visitor.ticketType;
+                if (!updatedPayment.eventId && visitor.eventId) {
+                  updatedPayment.eventId = visitor.eventId;
+                }
+                console.log(`[Razorpay Webhook] Found visitor via fallback. Type: ${ticketType}`);
+              } else {
+                console.warn(`[Razorpay Webhook] CRITICAL: No matching registration found for payment ${razorpayPaymentId}! Fallback failed.`);
+              }
             }
           }
           
@@ -356,12 +409,9 @@ const razorpayWebhook = async (req, res) => {
       }
     }
 
-    // Always return 200 OK for valid signatures to prevent retries
     return res.status(200).send("OK");
   } catch (error) {
     console.error("[Razorpay Webhook] Critical Error:", error);
-    // Still return 200 if we want to stop retries, but 500 might be appropriate for internal errors
-    // depending on retry policy preference. Industries standard often prefers 200 after logging.
     return res.status(500).send("Internal Server Error");
   }
 };
