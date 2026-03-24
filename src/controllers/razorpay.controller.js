@@ -178,32 +178,37 @@ const verifyPayment = async (req, res) => {
             console.warn(`[Verify Payment] Visitor record ${updatedPayment.visitorId} not found!`);
           }
         } else {
-          console.log(`[Verify Payment] No registrationId or visitorId. Falling back to query...`);
-          // Fallback for backward compatibility or direct payments
-          if (user.role === "athlete") {
-            const query = { userId: user._id, paymentStatus: "pending" };
-            if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
-            
-            const athleteRegistration = await registrationModel.findOneAndUpdate(
-              query,
+          console.log(`[Verify Payment] No registrationId or visitorId. Falling back to sequential model search...`);
+          const query = { userId: user._id, paymentStatus: "pending" };
+          if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+
+          // 1. Try finding an athlete registration first
+          let athleteRegistration = await registrationModel.findOneAndUpdate(
+            query,
+            { paymentStatus: "completed" },
+            { new: true }
+          );
+
+          if (!athleteRegistration && updatedPayment.eventId) {
+            console.log(`[Verify Payment] Athlete not found with eventId. Trying fallback WITHOUT eventId...`);
+            athleteRegistration = await registrationModel.findOneAndUpdate(
+              { userId: user._id, paymentStatus: "pending" },
               { paymentStatus: "completed" },
               { new: true }
             );
-            if (athleteRegistration) {
-              ticketType = "athlete";
-              console.log(`[Verify Payment] Athlete registration found via fallback.`);
-            }
-          } else {
-            const query = { userId: user._id, paymentStatus: "pending" };
-            if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
+          }
 
+          if (athleteRegistration) {
+            ticketType = "athlete";
+            console.log(`[Verify Payment] Found athlete registration via fallback.`);
+          } else {
+            // 2. If no athlete registration, try finding a visitor registration
             let visitor = await visitorModel.findOneAndUpdate(
               query,
               { paymentStatus: "completed" },
               { new: true }
             );
 
-            // If not found with eventId, try finding any pending registration for this user
             if (!visitor && updatedPayment.eventId) {
               console.log(`[Verify Payment] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
               visitor = await visitorModel.findOneAndUpdate(
@@ -215,7 +220,9 @@ const verifyPayment = async (req, res) => {
 
             if (visitor) {
               ticketType = visitor.ticketType;
-              console.log(`[Verify Payment] Visitor found via fallback. Type: ${ticketType}`);
+              console.log(`[Verify Payment] Found visitor via fallback. Type: ${ticketType}`);
+            } else {
+              console.warn(`[Verify Payment] No pending registration or visitor record found for user ${user.email}! Defaulting to standard ticket.`);
             }
           }
         }
@@ -317,27 +324,52 @@ const razorpayWebhook = async (req, res) => {
             }
           } else {
             // Fallback logic
+            console.log(`[Razorpay Webhook] No registrationId or visitorId. Falling back to sequential model search...`);
             const query = { userId: user._id, paymentStatus: "pending" };
             if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
 
-            let visitor = await visitorModel.findOneAndUpdate(
+            // 1. Try finding an athlete registration first
+            let athleteRegistration = await registrationModel.findOneAndUpdate(
               query,
               { paymentStatus: "completed" },
               { new: true }
             );
 
-            if (!visitor && updatedPayment.eventId) {
-              console.log(`[Razorpay Webhook] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
-              visitor = await visitorModel.findOneAndUpdate(
+            if (!athleteRegistration && updatedPayment.eventId) {
+              console.log(`[Razorpay Webhook] Athlete not found with eventId. Trying fallback WITHOUT eventId...`);
+              athleteRegistration = await registrationModel.findOneAndUpdate(
                 { userId: user._id, paymentStatus: "pending" },
                 { paymentStatus: "completed" },
                 { new: true }
               );
             }
 
-            if (visitor) {
-              ticketType = visitor.ticketType;
-              console.log(`[Razorpay Webhook] Visitor found via fallback. Type: ${ticketType}`);
+            if (athleteRegistration) {
+              ticketType = "athlete";
+              console.log(`[Razorpay Webhook] Found athlete registration via fallback.`);
+            } else {
+              // 2. If no athlete registration, try finding a visitor registration
+              let visitor = await visitorModel.findOneAndUpdate(
+                query,
+                { paymentStatus: "completed" },
+                { new: true }
+              );
+
+              if (!visitor && updatedPayment.eventId) {
+                console.log(`[Razorpay Webhook] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
+                visitor = await visitorModel.findOneAndUpdate(
+                  { userId: user._id, paymentStatus: "pending" },
+                  { paymentStatus: "completed" },
+                  { new: true }
+                );
+              }
+
+              if (visitor) {
+                ticketType = visitor.ticketType;
+                console.log(`[Razorpay Webhook] Found visitor via fallback. Type: ${ticketType}`);
+              } else {
+                console.warn(`[Razorpay Webhook] No pending registration or visitor record found for user ${user.email}! Defaulting to standard ticket.`);
+              }
             }
           }
           
