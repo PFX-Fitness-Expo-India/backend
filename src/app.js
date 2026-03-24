@@ -14,7 +14,7 @@ const authRoutes = require("./routes/auth.route");
 const ticketRoutes = require("./routes/ticket.route");
 const userRoutes = require("./routes/user.route");
 const statsRoutes = require("./routes/stats.route");
-const { sendEmail } = require("./utils/email.util");
+const sendEmail = require("./utils/email.util");
 
 connectDB();
 
