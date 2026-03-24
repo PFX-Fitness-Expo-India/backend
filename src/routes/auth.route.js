@@ -8,12 +8,14 @@ const {
   forgotPassword,
   resetPassword,
   getUserInfo,
+  verifyEmail,
 } = require("../controllers/auth.controller");
 const { authenticate } = require("../middlewares/auth.middleware");
 const router = express.Router();
 
 router.post("/login", login);
 router.post("/signup", signup);
+router.get("/verify-email/:token", verifyEmail);
 router.post("/refresh-token", refreshAccessToken);
 router.post("/logout", authenticate, logout);
 router.post("/change-password", authenticate, changePassword);

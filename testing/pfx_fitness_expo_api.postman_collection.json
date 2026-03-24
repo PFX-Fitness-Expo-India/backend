@@ -38,6 +38,26 @@
 					"response": []
 				},
 				{
+					"name": "Verify Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/verify-email/{{verificationToken}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"verify-email",
+								"{{verificationToken}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Login",
 					"event": [
 						{
@@ -1563,6 +1583,11 @@
 		},
 		{
 			"key": "paymentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "verificationToken",
 			"value": "",
 			"type": "string"
 		}
