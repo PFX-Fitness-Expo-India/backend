@@ -22,32 +22,24 @@ const sendEmail = require("./utils/email.util");
 
 connectDB();
 
-
 const app = express();
 
-app.use(helmet());
-const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(",")
-      : [];
+// Simplified CORS for Vercel/Production stability
+const allowedOrigins = process.env.ALLOWED_ORIGINS === "*" 
+  ? true 
+  : (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : true);
 
-    if (
-      !origin ||
-      allowedOrigins.includes("*") ||
-      allowedOrigins.length === 0 ||
-      allowedOrigins.includes(origin)
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+app.use(cors({
+  origin: allowedOrigins,
   credentials: true,
-  optionsSuccessStatus: 204,
-};
-app.use(cors(corsOptions));
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  optionsSuccessStatus: 200 
+}));
+
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
 
 app.use(morgan("dev"));
 
