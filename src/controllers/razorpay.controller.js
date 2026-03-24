@@ -182,7 +182,6 @@ const verifyPayment = async (req, res) => {
           const query = { userId: user._id, paymentStatus: "pending" };
           if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
 
-          // 1. Try finding an athlete registration first
           let athleteRegistration = await registrationModel.findOneAndUpdate(
             query,
             { paymentStatus: "completed" },
@@ -200,14 +199,12 @@ const verifyPayment = async (req, res) => {
 
           if (athleteRegistration) {
             ticketType = "athlete";
-            // Use eventId from registration if payment lacked it
             if (!updatedPayment.eventId && athleteRegistration.eventId) {
               updatedPayment.eventId = athleteRegistration.eventId;
               console.log(`[Verify Payment] Using eventId from athlete registration: ${updatedPayment.eventId}`);
             }
             console.log(`[Verify Payment] Found athlete registration via fallback.`);
           } else {
-            // 2. If no athlete registration, try finding a visitor registration
             let visitor = await visitorModel.findOneAndUpdate(
               query,
               { paymentStatus: "completed" },
@@ -290,18 +287,21 @@ const razorpayWebhook = async (req, res) => {
     if (event === "payment.captured") {
       const paymentEntity = req.body.payload.payment.entity;
       const razorpayPaymentId = paymentEntity.id;
-
-      // Check if payment already completed to prevent duplicate ticket issuance
-      const existingPayment = await paymentModel.findOne({ razorpayPaymentId });
+      const razorpayOrderId = paymentEntity.order_id;
+      const existingPayment = await paymentModel.findOne({ razorpayOrderId });
       
       if (existingPayment && existingPayment.paymentStatus === "completed") {
-        console.log(`[Razorpay Webhook] Payment ${razorpayPaymentId} already marked as completed, skipping.`);
+        console.log(`[Razorpay Webhook] Payment for order ${razorpayOrderId} already marked as completed, skipping.`);
         return res.status(200).send("OK");
       }
 
       const updatedPayment = await paymentModel.findOneAndUpdate(
-        { razorpayPaymentId },
-        { paymentStatus: "completed", updatedAt: Date.now() },
+        { razorpayOrderId },
+        { 
+          razorpayPaymentId, 
+          paymentStatus: "completed", 
+          updatedAt: Date.now() 
+        },
         { new: true }
       );
 
@@ -356,13 +356,11 @@ const razorpayWebhook = async (req, res) => {
 
             if (athleteRegistration) {
               ticketType = "athlete";
-              // Link eventId if missing
               if (!updatedPayment.eventId && athleteRegistration.eventId) {
                 updatedPayment.eventId = athleteRegistration.eventId;
               }
               console.log(`[Razorpay Webhook] Found athlete registration via fallback.`);
             } else {
-              // 2. If no athlete registration, try finding a visitor registration
               let visitor = await visitorModel.findOneAndUpdate(
                 query,
                 { paymentStatus: "completed" },
@@ -380,7 +378,6 @@ const razorpayWebhook = async (req, res) => {
 
               if (visitor) {
                 ticketType = visitor.ticketType;
-                // Link eventId if missing
                 if (!updatedPayment.eventId && visitor.eventId) {
                   updatedPayment.eventId = visitor.eventId;
                 }
@@ -406,12 +403,9 @@ const razorpayWebhook = async (req, res) => {
       }
     }
 
-    // Always return 200 OK for valid signatures to prevent retries
     return res.status(200).send("OK");
   } catch (error) {
     console.error("[Razorpay Webhook] Critical Error:", error);
-    // Still return 200 if we want to stop retries, but 500 might be appropriate for internal errors
-    // depending on retry policy preference. Industries standard often prefers 200 after logging.
     return res.status(500).send("Internal Server Error");
   }
 };
