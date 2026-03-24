@@ -787,7 +787,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"ticketType\": \"gold\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"ticketType\": \"gold\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
