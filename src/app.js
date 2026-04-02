@@ -24,7 +24,6 @@ connectDB();
 
 const app = express();
 
-// Simplified CORS for Vercel/Production stability
 const allowedOrigins = process.env.ALLOWED_ORIGINS === "*" 
   ? true 
   : (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : true);
