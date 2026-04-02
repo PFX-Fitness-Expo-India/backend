@@ -6,7 +6,6 @@ const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require("morgan");
 const compression = require("compression");
-const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db.config");
 const eventRoutes = require("./routes/event.route");
 const athleteRoutes = require("./routes/athlete.route");
@@ -43,12 +42,6 @@ app.use(helmet({
 app.use(morgan("dev"));
 
 app.use(compression());
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
-app.use("/api", limiter);
 
 app.use(express.json());
 
