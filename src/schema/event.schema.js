@@ -36,6 +36,9 @@ const eventSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  eventRules: {
+    type: [String],
+  },
   paymentMethod: {
     type: String,
     enum: ["online", "offline"],
