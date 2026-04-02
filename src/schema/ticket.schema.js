@@ -35,6 +35,9 @@ const ticketSchema = new mongoose.Schema({
     default: Date.now,
     index: true,
   },
+  subcategory: {
+    type: String,
+  },
 });
 
 ticketSchema.post("save", async function (doc) {
@@ -61,8 +64,9 @@ ticketSchema.post("save", async function (doc) {
         const qrCodeImage = await QRCode.toDataURL(doc.qrCodeData);
         const eventName = (event && event.eventName) || "PFX Fitness Expo";
         const typeLabel = (doc.ticketType || "standard").toUpperCase();
+        const subcategoryText = doc.subcategory ? `\nSubcategory: ${doc.subcategory}` : "";
 
-        const message = `Hello ${user.userName || "User"}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${doc.ticketId}\nType: ${typeLabel}`;
+        const message = `Hello ${user.userName || "User"}, your ticket for ${eventName} has been issued successfully. \nTicket ID: ${doc.ticketId}\nType: ${typeLabel}${subcategoryText}`;
 
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
@@ -72,6 +76,7 @@ ticketSchema.post("save", async function (doc) {
             <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>Ticket ID:</strong> ${doc.ticketId}</p>
               <p><strong>Type:</strong> ${typeLabel}</p>
+              ${doc.subcategory ? `<p><strong>Category:</strong> ${doc.subcategory}</p>` : ""}
               <p><strong>Event:</strong> ${eventName}</p>
             </div>
             <div style="text-align: center; margin-top: 20px;">
