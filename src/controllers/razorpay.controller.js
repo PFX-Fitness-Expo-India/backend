@@ -157,6 +157,7 @@ const verifyPayment = async (req, res) => {
       const user = await userModel.findById(updatedPayment.userId);
       if (user) {
         let ticketType = "standard";
+        let subcategory = null;
         if (updatedPayment.registrationId) {
           console.log(`[Verify Payment] Found registrationId: ${updatedPayment.registrationId}. Updating athlete registration...`);
           const athleteRegistration = await registrationModel.findByIdAndUpdate(
@@ -167,6 +168,7 @@ const verifyPayment = async (req, res) => {
           if (athleteRegistration) {
             console.log(`[Verify Payment] Athlete registration marked completed.`);
             ticketType = "athlete";
+            subcategory = athleteRegistration.subcategory;
           } else {
             console.warn(`[Verify Payment] Registration record ${updatedPayment.registrationId} not found!`);
           }
@@ -205,6 +207,7 @@ const verifyPayment = async (req, res) => {
 
           if (athleteRegistration) {
             ticketType = "athlete";
+            subcategory = athleteRegistration.subcategory;
             if (!updatedPayment.eventId && athleteRegistration.eventId) {
               updatedPayment.eventId = athleteRegistration.eventId;
               console.log(`[Verify Payment] Using eventId from athlete registration: ${updatedPayment.eventId}`);
@@ -240,8 +243,8 @@ const verifyPayment = async (req, res) => {
           }
         }
         
-        console.log(`[Verify Payment] Final Step: Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId}...`);
-        const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType);
+        console.log(`[Verify Payment] Final Step: Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId} (Subcategory: ${subcategory || "None"})...`);
+        const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType, subcategory);
         if (issuedTicket) {
           console.log(`[Verify Payment] Ticket ${issuedTicket.ticketId} issued successfully.`);
         } else {
@@ -317,6 +320,7 @@ const razorpayWebhook = async (req, res) => {
         const user = await userModel.findById(updatedPayment.userId);
         if (user) {
           let ticketType = "standard"; // Default fallback
+          let subcategory = null;
           
           if (updatedPayment.registrationId) {
             const athleteRegistration = await registrationModel.findByIdAndUpdate(
@@ -326,6 +330,7 @@ const razorpayWebhook = async (req, res) => {
             );
             if (athleteRegistration) {
               ticketType = "athlete";
+              subcategory = athleteRegistration.subcategory;
               console.log(`[Razorpay Webhook] Athlete registration ${updatedPayment.registrationId} marked completed.`);
             }
           } else if (updatedPayment.visitorId) {
@@ -362,6 +367,7 @@ const razorpayWebhook = async (req, res) => {
 
             if (athleteRegistration) {
               ticketType = "athlete";
+              subcategory = athleteRegistration.subcategory;
               if (!updatedPayment.eventId && athleteRegistration.eventId) {
                 updatedPayment.eventId = athleteRegistration.eventId;
               }
@@ -394,8 +400,8 @@ const razorpayWebhook = async (req, res) => {
             }
           }
           
-          console.log(`[Razorpay Webhook] Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId}...`);
-          const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType);
+          console.log(`[Razorpay Webhook] Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId} (Subcategory: ${subcategory || "None"})...`);
+          const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType, subcategory);
           if (issuedTicket) {
             console.log(`[Razorpay Webhook] Ticket ${issuedTicket.ticketId} issued successfully.`);
           } else {

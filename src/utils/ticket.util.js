@@ -21,9 +21,10 @@ const generateTicketId = async (year) => {
  * @param {string} userId - The ID of the user.
  * @param {string} eventId - The ID of the event.
  * @param {string} ticketType - The type of ticket (athlete, gold, elite, standard).
+ * @param {string} [subcategory] - The specific subcategory for the athlete.
  * @returns {Promise<Object>} - The created ticket object.
  */
-const issueTicket = async (userId, eventId, ticketType) => {
+const issueTicket = async (userId, eventId, ticketType, subcategory) => {
   try {
     const year = new Date().getFullYear();
     const ticketId = await generateTicketId(year);
@@ -34,6 +35,7 @@ const issueTicket = async (userId, eventId, ticketType) => {
       userId,
       eventId,
       ticketType,
+      subcategory,
     });
 
     const ticket = new ticketModel({
@@ -41,6 +43,7 @@ const issueTicket = async (userId, eventId, ticketType) => {
       userId,
       eventId,
       ticketType,
+      subcategory,
       qrCodeData,
     });
 

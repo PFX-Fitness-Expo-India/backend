@@ -52,11 +52,10 @@ const eventSchema = new mongoose.Schema({
     enum: [true, false],
     default: false,
   },
-  subcategories: [
-    {
-      name: String,
-    },
-  ],
+  subcategories: {
+    type: [String],
+    default: [],
+  },
 });
 
 eventSchema.pre("save", async function () {

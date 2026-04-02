@@ -24,6 +24,9 @@ const athleteRegistrationSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  subcategory: {
+    type: String,
+  },
 
   timeStamp: {
     type: Date,

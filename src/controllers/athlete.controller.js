@@ -6,7 +6,7 @@ const { issueTicket } = require("../utils/ticket.util");
 
 const createRegistration = async (req, res) => {
   try {
-    const { userId, eventId, age, gender, weight, paymentMethod } = req.body;
+    const { userId, eventId, age, gender, weight, subcategory, paymentMethod } = req.body;
 
     if (!eventId) {
       return res
@@ -22,6 +22,7 @@ const createRegistration = async (req, res) => {
       existingPendingRegistration.age = age;
       existingPendingRegistration.gender = gender;
       existingPendingRegistration.weight = weight;
+      existingPendingRegistration.subcategory = subcategory;
       existingPendingRegistration.paymentMethod = paymentMethod || "online";
       await existingPendingRegistration.save();
 
@@ -37,6 +38,7 @@ const createRegistration = async (req, res) => {
       age,
       gender,
       weight,
+      subcategory,
       status: "pending",
       paymentMethod: paymentMethod || "online",
       paymentStatus: "pending",
@@ -140,6 +142,7 @@ const getRegistrations = async (req, res) => {
         age: 1,
         gender: 1,
         weight: 1,
+        subcategory: 1,
         status: 1,
         paymentStatus: 1,
         paymentMethod: 1,
@@ -293,7 +296,7 @@ const getAtheleteCount = async (req, res) => {
 
 const addAtheleteToEvent = async (req, res) => {
   try {
-    const { eventId, userMail, age, gender, weight, paymentMethod } = req.body;
+    const { eventId, userMail, age, gender, weight, subcategory, paymentMethod } = req.body;
 
     if (!eventId) {
       return res
@@ -324,6 +327,7 @@ const addAtheleteToEvent = async (req, res) => {
       age,
       gender,
       weight,
+      subcategory,
       status: "pending",
       paymentMethod: paymentMethod || "offline",
       paymentStatus: paymentMethod === "online" ? "pending" : "completed",
@@ -335,7 +339,7 @@ const addAtheleteToEvent = async (req, res) => {
 
     // Issue ticket immediately only if not online payment
     if (paymentMethod !== "online") {
-      await issueTicket(user._id, eventId, "athlete");
+      await issueTicket(user._id, eventId, "athlete", subcategory);
     }
 
     return res
