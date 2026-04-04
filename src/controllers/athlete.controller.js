@@ -341,6 +341,7 @@ const addAtheleteToEvent = async (req, res) => {
     // Issue ticket immediately only if not online payment
     if (paymentMethod !== "online") {
       await issueTicket(user._id, eventId, "athlete", subcategory);
+      await registrationModel.findByIdAndUpdate(registration._id, { status: "approved" });
     }
 
     return res
