@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const ticketModel = require("../models/ticket.model");
 const Counter = require("../models/counter.model");
 
@@ -28,9 +29,11 @@ const issueTicket = async (userId, eventId, ticketType, subcategory) => {
   try {
     const year = new Date().getFullYear();
     const ticketId = await generateTicketId(year);
+    const _id = new mongoose.Types.ObjectId();
 
     // Basic string for QR code data, can be changed later to a signed token if needed
     const qrCodeData = JSON.stringify({
+      _id,
       ticketId,
       userId,
       eventId,
@@ -39,6 +42,7 @@ const issueTicket = async (userId, eventId, ticketType, subcategory) => {
     });
 
     const ticket = new ticketModel({
+      _id,
       ticketId,
       userId,
       eventId,
