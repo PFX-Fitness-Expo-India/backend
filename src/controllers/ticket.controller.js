@@ -107,6 +107,44 @@ const updateTicketStatus = async (req, res) => {
   }
 };
 
+const verifyTicket = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const ticket = await ticketModel
+      .findOne({ ticketId })
+      .populate("userId", "userName email phoneNumber")
+      .populate("eventId", "eventName eventDate eligibility");
+
+    if (!ticket) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Ticket not found", null));
+    }
+
+    const responseData = {
+      ...ticket._doc,
+      isUsed: ticket.status === "used",
+      isCancelled: ticket.status === "cancelled",
+      canUse: ticket.status === "unused",
+    };
+
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(
+          200,
+          "Ticket verification successful",
+          responseData,
+        ),
+      );
+  } catch (error) {
+    console.error("Verify ticket error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 const getMyTickets = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -134,4 +172,5 @@ module.exports = {
   getTicketsByUserId,
   getMyTickets,
   updateTicketStatus,
+  verifyTicket,
 };
