@@ -56,6 +56,19 @@ const eventSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  daySubtitle: {
+    type: String,
+    default: "",
+  },
+  dayNumber: {
+    type: Number,
+    required: true,
+    default: 1,
+  },
+  eligibility: {
+    type: [String],
+    default: [],
+  },
 });
 
 eventSchema.pre("save", async function () {
