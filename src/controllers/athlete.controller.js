@@ -14,54 +14,54 @@ const createRegistration = async (req, res) => {
         .json(new CommonResponse(400, "Event ID is required for athlete registration", null));
     }
 
+    let registration;
+    let isNew = false;
+
     // Check if a registration already exists for this user + event
     const existingRegistration = await registrationModel.findOne({ userId, eventId });
 
     if (existingRegistration) {
-      // Update their details
+      // Update their details but keep going — ticket must still be issued below
       existingRegistration.age = age;
       existingRegistration.gender = gender;
       existingRegistration.weight = weight;
       existingRegistration.subcategory = subcategory;
       existingRegistration.paymentMethod = paymentMethod || "online";
       await existingRegistration.save();
-
-      return res
-        .status(200)
-        .json(new CommonResponse(200, "Registration updated", existingRegistration));
+      registration = existingRegistration;
+    } else {
+      // Brand new registration
+      registration = new registrationModel({
+        userId,
+        eventId,
+        age,
+        gender,
+        weight,
+        subcategory,
+        status: "pending",
+        paymentMethod: paymentMethod || "online",
+        paymentStatus: "pending",
+      });
+      await registration.save();
+      isNew = true;
     }
 
-    const registrationData = {
-      userId,
-      eventId,
-      age,
-      gender,
-      weight,
-      subcategory,
-      status: "pending",
-      paymentMethod: paymentMethod || "online",
-      paymentStatus: "pending",
-    };
-
-    const registration = new registrationModel(registrationData);
-    await registration.save();
-
-    // Issue ticket immediately so the athlete can see their booking right away.
-    // Payment status is tracked separately — the ticket acts as the booking confirmation.
+    // Always issue a ticket (issueTicket has a built-in duplicate guard —
+    // it returns the existing ticket if one already exists for userId + eventId).
     try {
-      await issueTicket(userId, eventId, "athlete", subcategory);
-      console.log(`[createRegistration] Ticket issued for userId: ${userId}, eventId: ${eventId}`);
+      const ticket = await issueTicket(userId, eventId, "athlete", subcategory);
+      console.log(`[createRegistration] Ticket ready: ${ticket.ticketId} for userId: ${userId}`);
     } catch (ticketError) {
       // Non-fatal: registration is saved, ticket can be retried
       console.error("[createRegistration] Ticket issuance failed (non-fatal):", ticketError.message);
     }
 
     return res
-      .status(201)
+      .status(isNew ? 201 : 200)
       .json(
         new CommonResponse(
-          201,
-          "Registration initiated successfully",
+          isNew ? 201 : 200,
+          isNew ? "Registration initiated successfully" : "Registration updated",
           registration,
         ),
       );
@@ -369,6 +369,43 @@ const addAtheleteToEvent = async (req, res) => {
   }
 };
 
+/**
+ * POST /registrations/issue-ticket
+ * Body: { userId, eventId }
+ * Issues (or re-returns) a ticket for an athlete who already has a registration.
+ * Safe to call multiple times — returns existing ticket if already issued.
+ */
+const issueAthleteTicket = async (req, res) => {
+  try {
+    const { userId, eventId } = req.body;
+
+    if (!userId || !eventId) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "userId and eventId are required", null));
+    }
+
+    const registration = await registrationModel.findOne({ userId, eventId });
+    if (!registration) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Registration not found for this user and event", null));
+    }
+
+    const ticket = await issueTicket(userId, eventId, "athlete", registration.subcategory);
+    console.log(`[issueAthleteTicket] Ticket ready: ${ticket.ticketId} for userId: ${userId}`);
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Ticket issued successfully", ticket));
+  } catch (error) {
+    console.error("Issue athlete ticket error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   createRegistration,
   getRegistrations,
@@ -377,4 +414,5 @@ module.exports = {
   deleteRegistration,
   getAtheleteCount,
   addAtheleteToEvent,
+  issueAthleteTicket,
 };
