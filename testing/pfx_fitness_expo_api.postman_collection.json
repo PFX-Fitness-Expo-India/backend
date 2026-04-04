@@ -352,7 +352,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventName\": \"Powerlifting Championship 2026\",\n    \"eventDate\": \"2026-06-15\",\n    \"eventTime\": \"09:00 AM\",\n    \"eventDescription\": \"An elite powerlifting competition for all weight classes.\",\n    \"eventLocation\": \"New Delhi Exhibition Centre\",\n    \"eventCapacity\": 500,\n    \"eventPrice\": 1500,\n    \"eventImage\": \"https://example.com/event-image.jpg\",\n    \"paymentMethod\": \"online\",\n    \"isActive\": false\n}",
+							"raw": "{\n    \"eventName\": \"Powerlifting Championship 2026\",\n    \"eventDate\": \"2026-06-15\",\n    \"eventTime\": \"09:00 AM\",\n    \"eventDescription\": \"An elite powerlifting competition for all weight classes.\",\n    \"eventLocation\": \"New Delhi Exhibition Centre\",\n    \"eventCapacity\": 500,\n    \"eventPrice\": 1500,\n    \"eventImage\": \"https://example.com/event-image.jpg\",\n    \"paymentMethod\": \"online\",\n    \"isActive\": false,\n    \"daySubtitle\": \"EXPO OPENING + ENDURANCE\",\n    \"dayNumber\": 1,\n    \"eligibility\": [\n        \"Age 18+\",\n        \"Valid ID Proof\",\n        \"Fitness Certification (for Athletes)\"\n    ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -385,6 +385,25 @@
 							"path": [
 								"api",
 								"events"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Event Schedule (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/events/schedule",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"events",
+								"schedule"
 							]
 						}
 					},
@@ -426,7 +445,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventName\": \"Updated Powerlifting Championship 2026\",\n    \"eventDescription\": \"Updated description for the championship.\",\n    \"eventLocation\": \"Updated Location\",\n    \"eventPrice\": 2000,\n    \"eventCapacity\": 600,\n    \"eventDate\": \"2026-07-20\",\n    \"eventTime\": \"10:00 AM\",\n    \"eventImage\": \"https://example.com/updated-image.jpg\",\n    \"isActive\": true\n}",
+							"raw": "{\n    \"eventName\": \"Updated Powerlifting Championship 2026\",\n    \"eventDescription\": \"Updated description for the championship.\",\n    \"eventLocation\": \"Updated Location\",\n    \"eventPrice\": 2000,\n    \"eventCapacity\": 600,\n    \"eventDate\": \"2026-07-20\",\n    \"eventTime\": \"10:00 AM\",\n    \"eventImage\": \"https://example.com/updated-image.jpg\",\n    \"isActive\": true,\n    \"daySubtitle\": \"PHYSIQUE + COMBAT\",\n    \"dayNumber\": 2,\n    \"eligibility\": [\n        \"Open to all professional athletes\",\n        \"Registration required\"\n    ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
