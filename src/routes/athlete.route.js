@@ -7,12 +7,14 @@ const {
   deleteRegistration,
   getAtheleteCount,
   addAtheleteToEvent,
+  issueAthleteTicket,
 } = require("../controllers/athlete.controller");
 const { authenticate, authorize } = require("../middlewares/auth.middleware");
 
 const router = express.Router();
 
 router.post("/", authenticate, createRegistration);
+router.post("/issue-ticket", authenticate, issueAthleteTicket);
 router.get("/", authenticate, authorize("admin"), getRegistrations);
 router.get("/get-count", authenticate, authorize("admin"), getAtheleteCount);
 router.post("/add-game", authenticate, authorize("admin"), addAtheleteToEvent);
