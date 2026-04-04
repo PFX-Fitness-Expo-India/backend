@@ -155,6 +155,7 @@ const getRegistrations = async (req, res) => {
         eventId: {
           _id: "$eventDetails._id",
           eventName: "$eventDetails.eventName",
+          eligibility: "$eventDetails.eligibility",
         },
       },
     });
@@ -191,7 +192,7 @@ const getRegistrationById = async (req, res) => {
     const registration = await registrationModel
       .findById(id)
       .populate("userId", "userName email")
-      .populate("eventId", "eventName");
+      .populate("eventId", "eventName eligibility");
 
     if (!registration) {
       return res
