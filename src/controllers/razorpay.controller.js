@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const paymentModel = require("../models/payment.model");
 const visitorModel = require("../models/visitor.model");
 const registrationModel = require("../models/registration.model");
+const ticketModel = require("../models/ticket.model");
 const userModel = require("../models/user.model");
 const CommonResponse = require("../utils/common.response");
 const { issueTicket } = require("../utils/ticket.util");
@@ -25,6 +26,88 @@ const razorpay = new Razorpay({
   key_secret: razorpayKeys.key_secret,
 });
 
+/**
+ * Shared helper: resolves ticket type from an already-updated payment record,
+ * then issues the ticket if one doesn't already exist.
+ * Mirrors the exact same logic used for visitors — direct ID-based lookup only.
+ */
+const resolveAndIssueTicket = async (payment, tag = "Payment") => {
+  const user = await userModel.findById(payment.userId);
+  if (!user) {
+    console.error(`[${tag}] User not found for userId: ${payment.userId}`);
+    return;
+  }
+
+  // Guard: never issue a duplicate ticket for the same user + event
+  const existingTicket = await ticketModel.findOne({
+    userId: payment.userId,
+    eventId: payment.eventId,
+  });
+  if (existingTicket) {
+    console.log(`[${tag}] Ticket already exists for user ${user.email} (event: ${payment.eventId}). Skipping.`);
+    return;
+  }
+
+  let ticketType = "standard";
+  let subcategory = null;
+  let eventId = payment.eventId;
+
+  if (payment.registrationId) {
+    // --- ATHLETE path (mirrors visitor path exactly) ---
+    console.log(`[${tag}] registrationId found: ${payment.registrationId}. Resolving athlete registration...`);
+    const registration = await registrationModel.findByIdAndUpdate(
+      payment.registrationId,
+      { paymentStatus: "completed", status: "approved" },
+      { new: true }
+    );
+    if (!registration) {
+      console.warn(`[${tag}] Registration ${payment.registrationId} not found. Cannot issue ticket.`);
+      return;
+    }
+    ticketType = "athlete";
+    subcategory = registration.subcategory;
+    // Use eventId from the registration if it wasn't on the payment record
+    if (!eventId && registration.eventId) {
+      eventId = registration.eventId;
+    }
+    console.log(`[${tag}] Athlete registration resolved. subcategory: ${subcategory || "none"}`);
+
+  } else if (payment.visitorId) {
+    // --- VISITOR path ---
+    console.log(`[${tag}] visitorId found: ${payment.visitorId}. Resolving visitor...`);
+    const visitor = await visitorModel.findByIdAndUpdate(
+      payment.visitorId,
+      { paymentStatus: "completed" },
+      { new: true }
+    );
+    if (!visitor) {
+      console.warn(`[${tag}] Visitor ${payment.visitorId} not found. Cannot issue ticket.`);
+      return;
+    }
+    ticketType = visitor.ticketType;
+    // Use eventId from the visitor record if not on payment
+    if (!eventId && visitor.eventId) {
+      eventId = visitor.eventId;
+    }
+    console.log(`[${tag}] Visitor resolved. ticketType: ${ticketType}`);
+
+  } else {
+    console.warn(`[${tag}] No registrationId or visitorId linked to payment ${payment._id}. Cannot issue ticket.`);
+    return;
+  }
+
+  console.log(`[${tag}] Issuing ${ticketType} ticket for user ${user.email} (event: ${eventId}, subcategory: ${subcategory || "none"})...`);
+  const issuedTicket = await issueTicket(user._id, eventId, ticketType, subcategory);
+  if (issuedTicket) {
+    console.log(`[${tag}] Ticket ${issuedTicket.ticketId} issued successfully.`);
+  } else {
+    console.error(`[${tag}] issueTicket returned falsy for user ${user.email}.`);
+  }
+};
+
+// ─────────────────────────────────────────────
+// createOrder
+// ─────────────────────────────────────────────
 const createOrder = async (req, res) => {
   try {
     const { userId, eventId, amount, registrationId, visitorId } = req.body;
@@ -42,7 +125,7 @@ const createOrder = async (req, res) => {
     }
 
     const options = {
-      amount: Math.round(Number(amount) * 100), // Ensure it's a valid integer in paise
+      amount: Math.round(Number(amount) * 100),
       currency: "INR",
       receipt: `receipt_${Date.now()}_${userId.slice(-4)}`,
     };
@@ -56,7 +139,7 @@ const createOrder = async (req, res) => {
         .json(new CommonResponse(500, "Failed to create order", null));
     }
 
-    console.log(`[Create Order] Incoming: userId=${userId}, eventId=${eventId}, registrationId=${registrationId}, visitorId=${visitorId}, amount=${amount}`);
+    console.log(`[Create Order] userId=${userId}, eventId=${eventId}, registrationId=${registrationId}, visitorId=${visitorId}, amount=${amount}`);
 
     const mongoose = require("mongoose");
     const paymentData = {
@@ -67,209 +150,99 @@ const createOrder = async (req, res) => {
       paymentStatus: "pending",
     };
 
-    if (mongoose.Types.ObjectId.isValid(eventId)) {
-      paymentData.eventId = eventId;
-    }
+    if (mongoose.Types.ObjectId.isValid(eventId)) paymentData.eventId = eventId;
+    if (registrationId && mongoose.Types.ObjectId.isValid(registrationId.trim())) paymentData.registrationId = registrationId.trim();
+    if (visitorId && mongoose.Types.ObjectId.isValid(visitorId.trim())) paymentData.visitorId = visitorId.trim();
 
-    if (registrationId && mongoose.Types.ObjectId.isValid(registrationId.trim())) {
-      paymentData.registrationId = registrationId.trim();
-    }
-    if (visitorId && mongoose.Types.ObjectId.isValid(visitorId.trim())) {
-      paymentData.visitorId = visitorId.trim();
-    }
-
-    console.log(`[Create Order] Saving payment record with registrationId: ${paymentData.registrationId}, visitorId: ${paymentData.visitorId}`);
+    console.log(`[Create Order] Saving payment with registrationId: ${paymentData.registrationId}, visitorId: ${paymentData.visitorId}`);
     const payment = new paymentModel(paymentData);
-
     await payment.save();
 
     return res
       .status(201)
       .json(new CommonResponse(201, "Order created successfully", order));
   } catch (error) {
-    console.error("Create order error details:", {
+    console.error("Create order error:", {
       message: error.message,
       code: error.code,
       name: error.name,
-      raw: error,
     });
 
     if (error.name === "ValidationError") {
       return res.status(400).json(new CommonResponse(400, `Validation Error: ${error.message}`, null));
     }
-
     if (error.name === "CastError") {
       return res.status(400).json(new CommonResponse(400, `Invalid ID format: ${error.value} is not a valid ${error.kind}`, null));
     }
 
-    const errorMessage =
-      error.message ||
-      (typeof error === "string" ? error : JSON.stringify(error));
-    return res
-      .status(500)
-      .json(
-        new CommonResponse(500, `Internal server error: ${errorMessage}`, null),
-      );
+    const errorMessage = error.message || (typeof error === "string" ? error : JSON.stringify(error));
+    return res.status(500).json(new CommonResponse(500, `Internal server error: ${errorMessage}`, null));
   }
 };
 
+// ─────────────────────────────────────────────
+// verifyPayment  (called by the frontend)
+// ─────────────────────────────────────────────
 const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-      req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
-
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body.toString())
       .digest("hex");
-    
+
     const isSignatureValid = expectedSignature === razorpay_signature;
-    
-    if (isSignatureValid) {
-      const existingPayment = await paymentModel.findOne({ razorpayOrderId: razorpay_order_id });
-      if (existingPayment && existingPayment.paymentStatus === "completed") {
-        return res
-          .status(200)
-          .json(new CommonResponse(200, "Payment already verified", null));
-      }
 
-      console.log(`[Verify Payment] Processing. Order: ${razorpay_order_id}`);
-      const updatedPayment = await paymentModel.findOneAndUpdate(
-        { razorpayOrderId: razorpay_order_id },
-        {
-          razorpayPaymentId: razorpay_payment_id,
-          razorpaySignature: razorpay_signature,
-          paymentStatus: "completed",
-          updatedAt: Date.now(),
-        },
-        { new: true },
-      );
-
-      if (!updatedPayment) {
-        console.error(`[Verify Payment] Payment record not found for orderId: ${razorpay_order_id}`);
-        return res.status(404).json(new CommonResponse(404, "Payment record not found", null));
-      }
-
-      console.log(`[Verify Payment] Payment updated. User: ${updatedPayment.userId}, RegistrationId: ${updatedPayment.registrationId}, VisitorId: ${updatedPayment.visitorId}`);
-
-      const user = await userModel.findById(updatedPayment.userId);
-      if (user) {
-        let ticketType = "standard";
-        let subcategory = null;
-        if (updatedPayment.registrationId) {
-          console.log(`[Verify Payment] Found registrationId: ${updatedPayment.registrationId}. Updating athlete registration...`);
-          const athleteRegistration = await registrationModel.findByIdAndUpdate(
-            updatedPayment.registrationId,
-            { paymentStatus: "completed" },
-            { new: true }
-          );
-          if (athleteRegistration) {
-            console.log(`[Verify Payment] Athlete registration marked completed.`);
-            ticketType = "athlete";
-            subcategory = athleteRegistration.subcategory;
-          } else {
-            console.warn(`[Verify Payment] Registration record ${updatedPayment.registrationId} not found!`);
-          }
-        } else if (updatedPayment.visitorId) {
-          console.log(`[Verify Payment] Found visitorId: ${updatedPayment.visitorId}. Updating visitor status...`);
-          const visitor = await visitorModel.findByIdAndUpdate(
-            updatedPayment.visitorId,
-            { paymentStatus: "completed" },
-            { new: true }
-          );
-          if (visitor) {
-            console.log(`[Verify Payment] Visitor status marked completed.`);
-            ticketType = visitor.ticketType;
-          } else {
-            console.warn(`[Verify Payment] Visitor record ${updatedPayment.visitorId} not found!`);
-          }
-        } else {
-          console.log(`[Verify Payment] No specific IDs. Falling back to sequential model search...`);
-          const query = { userId: user._id, paymentStatus: "pending" };
-          if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
-
-          let athleteRegistration = await registrationModel.findOneAndUpdate(
-            query,
-            { paymentStatus: "completed" },
-            { new: true }
-          );
-
-          if (!athleteRegistration && updatedPayment.eventId) {
-            console.log(`[Verify Payment] Athlete not found with eventId. Trying fallback WITHOUT eventId...`);
-            athleteRegistration = await registrationModel.findOneAndUpdate(
-              { userId: user._id, paymentStatus: "pending" },
-              { paymentStatus: "completed" },
-              { new: true }
-            );
-          }
-
-          if (athleteRegistration) {
-            ticketType = "athlete";
-            subcategory = athleteRegistration.subcategory;
-            if (!updatedPayment.eventId && athleteRegistration.eventId) {
-              updatedPayment.eventId = athleteRegistration.eventId;
-              console.log(`[Verify Payment] Using eventId from athlete registration: ${updatedPayment.eventId}`);
-            }
-            console.log(`[Verify Payment] Found athlete registration via fallback.`);
-          } else {
-            let visitor = await visitorModel.findOneAndUpdate(
-              query,
-              { paymentStatus: "completed" },
-              { new: true }
-            );
-
-            if (!visitor && updatedPayment.eventId) {
-              console.log(`[Verify Payment] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
-              visitor = await visitorModel.findOneAndUpdate(
-                { userId: user._id, paymentStatus: "pending" },
-                { paymentStatus: "completed" },
-                { new: true }
-              );
-            }
-
-            if (visitor) {
-              ticketType = visitor.ticketType;
-              // Use eventId from visitor record if payment lacked it
-              if (!updatedPayment.eventId && visitor.eventId) {
-                updatedPayment.eventId = visitor.eventId;
-                console.log(`[Verify Payment] Using eventId from visitor record: ${updatedPayment.eventId}`);
-              }
-              console.log(`[Verify Payment] Found visitor via fallback. Type: ${ticketType}`);
-            } else {
-              console.warn(`[Verify Payment] CRITICAL: No matching registration found for user ${user.email} (userId: ${user._id})! Fallback search failed.`);
-            }
-          }
-        }
-        
-        console.log(`[Verify Payment] Final Step: Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId} (Subcategory: ${subcategory || "None"})...`);
-        const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType, subcategory);
-        if (issuedTicket) {
-          console.log(`[Verify Payment] Ticket ${issuedTicket.ticketId} issued successfully.`);
-        } else {
-          console.error(`[Verify Payment] Failed to issue ticket for user ${user.email}!`);
-        }
-      } else {
-        console.error(`[Verify Payment] User record not found for userId: ${updatedPayment.userId}`);
-      }
-
-      return res
-        .status(200)
-        .json(new CommonResponse(200, "Payment verified successfully", null));
-    } else {
-      return res
-        .status(400)
-        .json(new CommonResponse(400, "Invalid signature", null));
+    if (!isSignatureValid) {
+      return res.status(400).json(new CommonResponse(400, "Invalid signature", null));
     }
+
+    console.log(`[Verify Payment] Signature valid for order: ${razorpay_order_id}`);
+
+    // Check if this order was already processed (webhook may have fired first)
+    const existingPayment = await paymentModel.findOne({ razorpayOrderId: razorpay_order_id });
+
+    if (existingPayment && existingPayment.paymentStatus === "completed") {
+      console.log(`[Verify Payment] Payment already completed. Ensuring ticket exists...`);
+      // Ticket might be missing if the webhook didn't fire — resolve it now
+      await resolveAndIssueTicket(existingPayment, "Verify Payment (already completed)");
+      return res.status(200).json(new CommonResponse(200, "Payment verified successfully", null));
+    }
+
+    // Mark payment as completed
+    const updatedPayment = await paymentModel.findOneAndUpdate(
+      { razorpayOrderId: razorpay_order_id },
+      {
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+        paymentStatus: "completed",
+        updatedAt: Date.now(),
+      },
+      { new: true }
+    );
+
+    if (!updatedPayment) {
+      console.error(`[Verify Payment] Payment record not found for orderId: ${razorpay_order_id}`);
+      return res.status(404).json(new CommonResponse(404, "Payment record not found", null));
+    }
+
+    console.log(`[Verify Payment] Payment marked completed. registrationId: ${updatedPayment.registrationId}, visitorId: ${updatedPayment.visitorId}`);
+
+    // Issue ticket using the same logic as visitor flow
+    await resolveAndIssueTicket(updatedPayment, "Verify Payment");
+
+    return res.status(200).json(new CommonResponse(200, "Payment verified successfully", null));
   } catch (error) {
     console.error("Verify payment error:", error);
-    return res
-      .status(500)
-      .json(new CommonResponse(500, "Internal server error", null));
+    return res.status(500).json(new CommonResponse(500, "Internal server error", null));
   }
 };
 
+// ─────────────────────────────────────────────
+// razorpayWebhook  (called by Razorpay servers)
+// ─────────────────────────────────────────────
 const razorpayWebhook = async (req, res) => {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -283,9 +256,7 @@ const razorpayWebhook = async (req, res) => {
     const digest = shasum.digest("hex");
 
     const signature = req.headers["x-razorpay-signature"];
-    const isSignatureValid = digest === signature;
-
-    if (!isSignatureValid) {
+    if (digest !== signature) {
       console.warn("WEBHOOK WARNING: Invalid signature received.");
       return res.status(400).send("Invalid signature");
     }
@@ -297,122 +268,31 @@ const razorpayWebhook = async (req, res) => {
       const paymentEntity = req.body.payload.payment.entity;
       const razorpayPaymentId = paymentEntity.id;
       const razorpayOrderId = paymentEntity.order_id;
+
+      // Skip if already processed
       const existingPayment = await paymentModel.findOne({ razorpayOrderId });
-      
       if (existingPayment && existingPayment.paymentStatus === "completed") {
-        console.log(`[Razorpay Webhook] Payment for order ${razorpayOrderId} already marked as completed, skipping.`);
+        console.log(`[Razorpay Webhook] Order ${razorpayOrderId} already completed. Ensuring ticket exists...`);
+        await resolveAndIssueTicket(existingPayment, "Webhook (already completed)");
         return res.status(200).send("OK");
       }
 
+      // Mark payment as completed
       const updatedPayment = await paymentModel.findOneAndUpdate(
         { razorpayOrderId },
-        { 
-          razorpayPaymentId, 
-          paymentStatus: "completed", 
-          updatedAt: Date.now() 
-        },
+        { razorpayPaymentId, paymentStatus: "completed", updatedAt: Date.now() },
         { new: true }
       );
 
-      if (updatedPayment) {
-        console.log(`[Razorpay Webhook] Payment ${razorpayPaymentId} updated to completed.`);
-        
-        const user = await userModel.findById(updatedPayment.userId);
-        if (user) {
-          let ticketType = "standard"; // Default fallback
-          let subcategory = null;
-          
-          if (updatedPayment.registrationId) {
-            const athleteRegistration = await registrationModel.findByIdAndUpdate(
-              updatedPayment.registrationId,
-              { paymentStatus: "completed" },
-              { new: true }
-            );
-            if (athleteRegistration) {
-              ticketType = "athlete";
-              subcategory = athleteRegistration.subcategory;
-              console.log(`[Razorpay Webhook] Athlete registration ${updatedPayment.registrationId} marked completed.`);
-            }
-          } else if (updatedPayment.visitorId) {
-            const visitor = await visitorModel.findByIdAndUpdate(
-              updatedPayment.visitorId,
-              { paymentStatus: "completed" },
-              { new: true }
-            );
-            if (visitor) {
-              ticketType = visitor.ticketType;
-              console.log(`[Razorpay Webhook] Visitor ${updatedPayment.visitorId} marked completed. Type: ${ticketType}`);
-            }
-          } else {
-            // Fallback logic
-            console.log(`[Razorpay Webhook] No matching IDs. Falling back to sequential model search...`);
-            const query = { userId: user._id, paymentStatus: "pending" };
-            if (updatedPayment.eventId) query.eventId = updatedPayment.eventId;
-
-            // 1. Try finding an athlete registration first
-            let athleteRegistration = await registrationModel.findOneAndUpdate(
-              query,
-              { paymentStatus: "completed" },
-              { new: true }
-            );
-
-            if (!athleteRegistration && updatedPayment.eventId) {
-              console.log(`[Razorpay Webhook] Athlete not found with eventId. Trying fallback WITHOUT eventId...`);
-              athleteRegistration = await registrationModel.findOneAndUpdate(
-                { userId: user._id, paymentStatus: "pending" },
-                { paymentStatus: "completed" },
-                { new: true }
-              );
-            }
-
-            if (athleteRegistration) {
-              ticketType = "athlete";
-              subcategory = athleteRegistration.subcategory;
-              if (!updatedPayment.eventId && athleteRegistration.eventId) {
-                updatedPayment.eventId = athleteRegistration.eventId;
-              }
-              console.log(`[Razorpay Webhook] Found athlete registration via fallback.`);
-            } else {
-              let visitor = await visitorModel.findOneAndUpdate(
-                query,
-                { paymentStatus: "completed" },
-                { new: true }
-              );
-
-              if (!visitor && updatedPayment.eventId) {
-                console.log(`[Razorpay Webhook] Visitor not found with eventId. Trying fallback WITHOUT eventId...`);
-                visitor = await visitorModel.findOneAndUpdate(
-                  { userId: user._id, paymentStatus: "pending" },
-                  { paymentStatus: "completed" },
-                  { new: true }
-                );
-              }
-
-              if (visitor) {
-                ticketType = visitor.ticketType;
-                if (!updatedPayment.eventId && visitor.eventId) {
-                  updatedPayment.eventId = visitor.eventId;
-                }
-                console.log(`[Razorpay Webhook] Found visitor via fallback. Type: ${ticketType}`);
-              } else {
-                console.warn(`[Razorpay Webhook] CRITICAL: No matching registration found for payment ${razorpayPaymentId}! Fallback failed.`);
-              }
-            }
-          }
-          
-          console.log(`[Razorpay Webhook] Issuing ${ticketType} ticket for user ${user.email} for event ${updatedPayment.eventId} (Subcategory: ${subcategory || "None"})...`);
-          const issuedTicket = await issueTicket(user._id, updatedPayment.eventId, ticketType, subcategory);
-          if (issuedTicket) {
-            console.log(`[Razorpay Webhook] Ticket ${issuedTicket.ticketId} issued successfully.`);
-          } else {
-            console.error(`[Razorpay Webhook] Failed to issue ticket for user ${user.email}!`);
-          }
-        } else {
-          console.error(`[Razorpay Webhook] User ${updatedPayment.userId} not found for payment ${razorpayPaymentId}`);
-        }
-      } else {
-        console.warn(`[Razorpay Webhook] Payment record not found for Razorpay Payment ID: ${razorpayPaymentId}`);
+      if (!updatedPayment) {
+        console.warn(`[Razorpay Webhook] Payment record not found for order: ${razorpayOrderId}`);
+        return res.status(200).send("OK");
       }
+
+      console.log(`[Razorpay Webhook] Payment ${razorpayPaymentId} marked completed. registrationId: ${updatedPayment.registrationId}, visitorId: ${updatedPayment.visitorId}`);
+
+      // Issue ticket using the same logic as visitor flow
+      await resolveAndIssueTicket(updatedPayment, "Webhook");
     }
 
     return res.status(200).send("OK");
