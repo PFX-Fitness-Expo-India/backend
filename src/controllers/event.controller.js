@@ -61,6 +61,9 @@ const createEvent = async (req, res) => {
       paymentMethod,
       haveSubcategory,
       subcategories,
+      daySubtitle,
+      dayNumber,
+      eligibility,
     } = req.body;
 
     const event = new eventModel({
@@ -75,6 +78,9 @@ const createEvent = async (req, res) => {
       paymentMethod,
       haveSubcategory,
       subcategories,
+      daySubtitle,
+      dayNumber,
+      eligibility,
     });
 
     await event.save();
@@ -106,6 +112,61 @@ const getEvents = async (req, res) => {
       .json(new CommonResponse(200, "Events fetched successfully", events));
   } catch (error) {
     console.error("Get events error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+const getEventSchedule = async (req, res) => {
+  try {
+    const events = await eventModel
+      .find({ isActive: true })
+      .sort({ dayNumber: 1, eventTime: 1 });
+
+    const scheduleMap = {};
+
+    events.forEach((event) => {
+      const dayKey = `day_${event.dayNumber}`;
+      if (!scheduleMap[dayKey]) {
+        const dateObj = new Date(event.eventDate);
+        const dayName = dateObj.toLocaleDateString("en-US", {
+          weekday: "long",
+        }).toUpperCase();
+
+        scheduleMap[dayKey] = {
+          dayNumber: event.dayNumber,
+          dayName: dayName,
+          date: event.eventDate,
+          subtitle: event.daySubtitle || "",
+          events: [],
+        };
+      }
+
+      scheduleMap[dayKey].events.push({
+        eventId: event.eventId,
+        eventName: event.eventName,
+        eventLocation: event.eventLocation,
+        eventTime: event.eventTime,
+        eventDescription: event.eventDescription,
+        eventImage: event.eventImage,
+        eventPrice: event.eventPrice,
+        haveSubcategory: event.haveSubcategory,
+        subcategories: event.subcategories,
+        eligibility: event.eligibility || [],
+      });
+    });
+
+    const days = Object.values(scheduleMap);
+
+    return res.status(200).json(
+      new CommonResponse(200, "Schedule fetched successfully", {
+        title: "THREE DAYS OF NON-STOP ACTION",
+        days: days,
+      }),
+    );
+  } catch (error) {
+    console.error("Get event schedule error:", error);
     return res
       .status(500)
       .json(new CommonResponse(500, "Internal server error", null));
@@ -252,4 +313,5 @@ module.exports = {
   deleteEvent,
   updateEventActiveStatus,
   getEventParticipants,
+  getEventSchedule,
 };
