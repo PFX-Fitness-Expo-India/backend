@@ -13,6 +13,7 @@ const visitorRoutes = require("./routes/visitor.route");
 const paymentRoutes = require("./routes/payment.route");
 
 const authRoutes = require("./routes/auth.route");
+const contactRoutes = require("./routes/contact.route");
 const ticketRoutes = require("./routes/ticket.route");
 const userRoutes = require("./routes/user.route");
 const statsRoutes = require("./routes/stats.route");
@@ -47,6 +48,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/api/athletes", athleteRoutes);
 
 app.use("/api/visitors", visitorRoutes);
