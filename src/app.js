@@ -13,6 +13,7 @@ const visitorRoutes = require("./routes/visitor.route");
 const paymentRoutes = require("./routes/payment.route");
 
 const authRoutes = require("./routes/auth.route");
+const contactRoutes = require("./routes/contact.route");
 const ticketRoutes = require("./routes/ticket.route");
 const userRoutes = require("./routes/user.route");
 const statsRoutes = require("./routes/stats.route");
@@ -47,6 +48,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/contacts", contactRoutes);
 app.use("/api/athletes", athleteRoutes);
 
 app.use("/api/visitors", visitorRoutes);
@@ -54,6 +56,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
+
+// Diagnostic Ping
+app.get("/api/ping", (req, res) => res.json({ status: "alive", timestamp: new Date() }));
 
 app.get("/test-email", async (req, res) => {
   try {

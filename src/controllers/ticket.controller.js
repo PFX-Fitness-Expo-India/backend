@@ -66,7 +66,7 @@ const getTicketsByUserId = async (req, res) => {
 
 const updateTicketStatus = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { ticketId } = req.params;
     const { status } = req.body;
 
     if (!["unused", "used", "cancelled"].includes(status)) {
@@ -75,7 +75,7 @@ const updateTicketStatus = async (req, res) => {
         .json(new CommonResponse(400, "Invalid status", null));
     }
 
-    const ticket = await ticketModel.findById(id);
+    const ticket = await ticketModel.findById(ticketId);
 
     if (!ticket) {
       return res
