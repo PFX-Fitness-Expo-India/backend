@@ -1,11 +1,7 @@
 const userModel = require("../models/user.model");
 const CommonResponse = require("../utils/common.response");
 
-/**
- * Get all users with optional role filtering
- * GET /api/users?role=visitor
- * GET /api/users?role=athlete
- */
+
 const getUsers = async (req, res) => {
   try {
     const { role } = req.query;
