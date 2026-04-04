@@ -157,7 +157,8 @@ const signup = async (req, res) => {
     await user.save();
 
     // Verification URL
-    const verificationUrl = `${req.protocol}://${req.get("host")}/api/auth/verify-email/${verificationToken}`;
+    // const verificationUrl = `${req.protocol}://${req.get("host")}/api/auth/verify-email/${verificationToken}`;
+    const verificationUrl = `https://pfx-fe.vercel.app/verify-email/${verificationToken}`;
 
     const message = `Welcome to PFX Fitness Expo! Please verify your email by clicking the link below:\n\n ${verificationUrl}`;
 
