@@ -592,7 +592,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"paymentMethod\": \"online\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"subcategory\": \"85kg and above\",\n    \"paymentMethod\": \"online\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -686,7 +686,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75\n}",
+							"raw": "{\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"subcategory\": \"Below 85kg\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
