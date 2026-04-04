@@ -64,6 +64,7 @@ const createEvent = async (req, res) => {
       daySubtitle,
       dayNumber,
       eligibility,
+      eventRules,
     } = req.body;
 
     const event = new eventModel({
@@ -81,6 +82,7 @@ const createEvent = async (req, res) => {
       daySubtitle,
       dayNumber,
       eligibility,
+      eventRules,
     });
 
     await event.save();
@@ -154,6 +156,7 @@ const getEventSchedule = async (req, res) => {
         haveSubcategory: event.haveSubcategory,
         subcategories: event.subcategories,
         eligibility: event.eligibility || [],
+        eventRules: event.eventRules || [],
       });
     });
 
