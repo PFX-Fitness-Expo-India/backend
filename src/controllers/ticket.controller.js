@@ -6,7 +6,7 @@ const getTickets = async (req, res) => {
     const tickets = await ticketModel
       .find()
       .populate("userId", "userName email phoneNumber")
-      .populate("eventId", "eventName eventDate");
+      .populate("eventId", "eventName eventDate eligibility");
 
     return res
       .status(200)
@@ -25,7 +25,7 @@ const getTicketById = async (req, res) => {
     const ticket = await ticketModel
       .findById(id)
       .populate("userId", "userName email phoneNumber")
-      .populate("eventId", "eventName eventDate");
+      .populate("eventId", "eventName eventDate eligibility");
 
     if (!ticket) {
       return res
@@ -49,7 +49,7 @@ const getTicketsByUserId = async (req, res) => {
     const { userId } = req.params;
     const tickets = await ticketModel
       .find({ userId })
-      .populate("eventId", "eventName eventDate");
+      .populate("eventId", "eventName eventDate eligibility");
 
     return res
       .status(200)
@@ -112,7 +112,7 @@ const getMyTickets = async (req, res) => {
     const userId = req.user.userId;
     const tickets = await ticketModel
       .find({ userId })
-      .populate("eventId", "eventName eventDate")
+      .populate("eventId", "eventName eventDate eligibility")
       .sort({ issuedAt: -1 });
 
     return res
