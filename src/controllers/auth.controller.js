@@ -160,12 +160,26 @@ const signup = async (req, res) => {
     const verificationUrl = `${req.protocol}://${req.get("host")}/api/auth/verify-email/${verificationToken}`;
 
     const message = `Welcome to PFX Fitness Expo! Please verify your email by clicking the link below:\n\n ${verificationUrl}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+        <h2 style="color: #333; text-align: center;">Welcome to PFX Fitness Expo!</h2>
+        <p style="color: #555; text-align: center;">Please verify your email address to complete your registration.</p>
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${verificationUrl}" style="background-color: #ff4500; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Verify Email</a>
+        </div>
+        <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          <a href="${verificationUrl}" style="color: #ff4500;">${verificationUrl}</a>
+        </p>
+      </div>
+    `;
 
     try {
       await sendEmail({
         email: user.email,
         subject: "Email Verification - PFX Fitness Expo",
         message,
+        html,
       });
 
       return res.status(201).json(
@@ -323,13 +337,28 @@ const forgotPassword = async (req, res) => {
     // Reset URL
     const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/reset-password/${resetToken}`;
 
-    const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+    const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please use the button below to reset your password: \n\n ${resetUrl}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+        <h2 style="color: #333; text-align: center;">Password Reset Request</h2>
+        <p style="color: #555; text-align: center;">You requested a password reset for your PFX Fitness Expo account. Click the button below to set a new password:</p>
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${resetUrl}" style="background-color: #ff4500; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
+        </div>
+        <p style="color: #888; font-size: 12px; margin-top: 30px; text-align: center;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          <a href="${resetUrl}" style="color: #ff4500;">${resetUrl}</a>
+        </p>
+        <p style="color: #555; text-align: center; font-size: 12px; margin-top: 10px;">This link will expire in 10 minutes.</p>
+      </div>
+    `;
 
     try {
       await sendEmail({
         email: user.email,
         subject: "Password Reset Token",
         message,
+        html,
       });
 
       return res
