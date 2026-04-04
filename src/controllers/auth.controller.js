@@ -336,7 +336,8 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     // Reset URL
-    const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/reset-password/${resetToken}`;
+    // const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/reset-password/${resetToken}`;
+     const resetUrl = `https://pfx-fe.vercel.app/reset-password/${resetToken}`;
 
     const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please use the button below to reset your password: \n\n ${resetUrl}`;
     const html = `
