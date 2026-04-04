@@ -48,7 +48,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
-app.use("/api/contact", contactRoutes);
+app.use("/api/contacts", contactRoutes);
 app.use("/api/athletes", athleteRoutes);
 
 app.use("/api/visitors", visitorRoutes);
@@ -56,6 +56,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
+
+// Diagnostic Ping
+app.get("/api/ping", (req, res) => res.json({ status: "alive", timestamp: new Date() }));
 
 app.get("/test-email", async (req, res) => {
   try {
