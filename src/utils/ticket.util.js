@@ -27,6 +27,15 @@ const generateTicketId = async (year) => {
  */
 const issueTicket = async (userId, eventId, ticketType, subcategory) => {
   try {
+    // Guard: return existing ticket if already issued for this user + event
+    if (eventId) {
+      const existing = await ticketModel.findOne({ userId, eventId });
+      if (existing) {
+        console.log(`Ticket already exists for userId ${userId}, eventId ${eventId}. Returning existing: ${existing.ticketId}`);
+        return existing;
+      }
+    }
+
     const year = new Date().getFullYear();
     const ticketId = await generateTicketId(year);
     const _id = new mongoose.Types.ObjectId();

@@ -14,23 +14,22 @@ const createRegistration = async (req, res) => {
         .json(new CommonResponse(400, "Event ID is required for athlete registration", null));
     }
 
-    const query = { userId, eventId, paymentStatus: "pending" };
-    
-    const existingPendingRegistration = await registrationModel.findOne(query);
+    // Check if a registration already exists for this user + event
+    const existingRegistration = await registrationModel.findOne({ userId, eventId });
 
-    if (existingPendingRegistration) {
-      existingPendingRegistration.age = age;
-      existingPendingRegistration.gender = gender;
-      existingPendingRegistration.weight = weight;
-      existingPendingRegistration.subcategory = subcategory;
-      existingPendingRegistration.paymentMethod = paymentMethod || "online";
-      await existingPendingRegistration.save();
+    if (existingRegistration) {
+      // Update their details
+      existingRegistration.age = age;
+      existingRegistration.gender = gender;
+      existingRegistration.weight = weight;
+      existingRegistration.subcategory = subcategory;
+      existingRegistration.paymentMethod = paymentMethod || "online";
+      await existingRegistration.save();
 
       return res
         .status(200)
-        .json(new CommonResponse(200, "Pending registration updated", existingPendingRegistration));
+        .json(new CommonResponse(200, "Registration updated", existingRegistration));
     }
-
 
     const registrationData = {
       userId,
@@ -45,8 +44,17 @@ const createRegistration = async (req, res) => {
     };
 
     const registration = new registrationModel(registrationData);
-
     await registration.save();
+
+    // Issue ticket immediately so the athlete can see their booking right away.
+    // Payment status is tracked separately — the ticket acts as the booking confirmation.
+    try {
+      await issueTicket(userId, eventId, "athlete", subcategory);
+      console.log(`[createRegistration] Ticket issued for userId: ${userId}, eventId: ${eventId}`);
+    } catch (ticketError) {
+      // Non-fatal: registration is saved, ticket can be retried
+      console.error("[createRegistration] Ticket issuance failed (non-fatal):", ticketError.message);
+    }
 
     return res
       .status(201)
