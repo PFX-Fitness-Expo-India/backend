@@ -126,14 +126,19 @@ const verifyTicket = async (req, res) => {
       isUsed: ticket.status === "used",
       isCancelled: ticket.status === "cancelled",
       canUse: ticket.status === "unused",
+      isAthlete: ticket.ticketType === "athlete",
     };
+
+    const message = ticket.ticketType === "athlete" 
+      ? "Ticket verification successful - This is an athlete ticket" 
+      : "Ticket verification successful";
 
     return res
       .status(200)
       .json(
         new CommonResponse(
           200,
-          "Ticket verification successful",
+          message,
           responseData,
         ),
       );
