@@ -7,6 +7,7 @@ router.get("/", authenticate, ticketController.getTickets);
 router.get("/my-tickets", authenticate, ticketController.getMyTickets);
 router.get("/:id", authenticate, ticketController.getTicketById);
 router.get("/user/:userId", authenticate, ticketController.getTicketsByUserId);
+router.get("/verify/:ticketId", authenticate, ticketController.verifyTicket);
 router.put("/:ticketId/status", authenticate, ticketController.updateTicketStatus);
 
 module.exports = router;
