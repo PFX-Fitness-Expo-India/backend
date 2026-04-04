@@ -92,8 +92,41 @@ const resolveAndIssueTicket = async (payment, tag = "Payment") => {
     console.log(`[${tag}] Visitor resolved. ticketType: ${ticketType}`);
 
   } else {
-    console.warn(`[${tag}] No registrationId or visitorId linked to payment ${payment._id}. Cannot issue ticket.`);
-    return;
+    // Fallback: frontend may not have sent registrationId/visitorId to createOrder.
+    // Search by userId + eventId for a pending athlete registration first, then visitor.
+    console.warn(`[${tag}] No registrationId or visitorId on payment ${payment._id}. Trying fallback search by userId + eventId...`);
+
+    const fallbackQuery = { userId: payment.userId, paymentStatus: "pending" };
+    if (payment.eventId) fallbackQuery.eventId = payment.eventId;
+
+    // Try athlete registration first
+    const registration = await registrationModel.findOneAndUpdate(
+      fallbackQuery,
+      { paymentStatus: "completed", status: "approved" },
+      { new: true }
+    );
+
+    if (registration) {
+      ticketType = "athlete";
+      subcategory = registration.subcategory;
+      if (!eventId && registration.eventId) eventId = registration.eventId;
+      console.log(`[${tag}] Fallback: found athlete registration ${registration._id}. subcategory: ${subcategory || "none"}`);
+    } else {
+      // Try visitor
+      const visitor = await visitorModel.findOneAndUpdate(
+        fallbackQuery,
+        { paymentStatus: "completed" },
+        { new: true }
+      );
+      if (visitor) {
+        ticketType = visitor.ticketType;
+        if (!eventId && visitor.eventId) eventId = visitor.eventId;
+        console.log(`[${tag}] Fallback: found visitor ${visitor._id}. ticketType: ${ticketType}`);
+      } else {
+        console.error(`[${tag}] Fallback failed — no pending registration or visitor found for userId: ${payment.userId}. Ticket NOT issued.`);
+        return;
+      }
+    }
   }
 
   console.log(`[${tag}] Issuing ${ticketType} ticket for user ${user.email} (event: ${eventId}, subcategory: ${subcategory || "none"})...`);
