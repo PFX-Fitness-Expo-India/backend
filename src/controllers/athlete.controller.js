@@ -157,6 +157,7 @@ const getRegistrations = async (req, res) => {
           _id: "$userDetails._id",
           userName: "$userDetails.userName",
           email: "$userDetails.email",
+          phoneNumber: "$userDetails.phoneNumber",
         },
         eventId: {
           _id: "$eventDetails._id",
@@ -197,7 +198,7 @@ const getRegistrationById = async (req, res) => {
     const { id } = req.params;
     const registration = await registrationModel
       .findById(id)
-      .populate("userId", "userName email")
+      .populate("userId", "userName email phoneNumber")
       .populate("eventId", "eventName eligibility");
 
     if (!registration) {
