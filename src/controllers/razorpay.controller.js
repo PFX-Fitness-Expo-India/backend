@@ -3,7 +3,6 @@ const crypto = require("crypto");
 const paymentModel = require("../models/payment.model");
 const visitorModel = require("../models/visitor.model");
 const registrationModel = require("../models/registration.model");
-const ticketModel = require("../models/ticket.model");
 const userModel = require("../models/user.model");
 const CommonResponse = require("../utils/common.response");
 const { issueTicket } = require("../utils/ticket.util");
@@ -37,16 +36,11 @@ const resolveAndIssueTicket = async (payment, tag = "Payment") => {
     console.error(`[${tag}] User not found for userId: ${payment.userId}`);
     return;
   }
+  // Note: duplicate-ticket guard is handled inside issueTicket() in ticket.util.js.
+  // Do NOT add a guard here based on payment.eventId — it can be null/undefined,
+  // which causes false-positive matches against stale test tickets and silently
+  // blocks real ticket issuance for both visitors and athletes.
 
-  // Guard: never issue a duplicate ticket for the same user + event
-  const existingTicket = await ticketModel.findOne({
-    userId: payment.userId,
-    eventId: payment.eventId,
-  });
-  if (existingTicket) {
-    console.log(`[${tag}] Ticket already exists for user ${user.email} (event: ${payment.eventId}). Skipping.`);
-    return;
-  }
 
   let ticketType = "standard";
   let subcategory = null;
