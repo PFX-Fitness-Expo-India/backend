@@ -98,9 +98,11 @@ const login = async (req, res) => {
 
 const signup = async (req, res) => {
   try {
-    // Destructure but intentionally IGNORE `role` from the request body.
-    // Role must never be set by the caller — always default to "visitor".
-    const { userName, phoneNumber, email, password } = req.body;
+    const { userName, phoneNumber, email, password, role } = req.body;
+    // Whitelist: only "visitor" and "athlete" are allowed from user input.
+    // "admin" and "dev" must never be self-assigned — they are silently blocked.
+    const ALLOWED_SIGNUP_ROLES = ["visitor", "athlete"];
+    const safeRole = ALLOWED_SIGNUP_ROLES.includes(role) ? role : "visitor";
 
     if (!userName || !phoneNumber || !email || !password) {
       return res
@@ -151,7 +153,7 @@ const signup = async (req, res) => {
       phoneNumber,
       email,
       password: hashedPassword,
-      role: "visitor", // roles are never accepted from user input
+      role: safeRole, // only "visitor" or "athlete" — admin/dev are blocked
       verificationToken,
       verificationTokenExpires,
     });
