@@ -99,6 +99,10 @@ const login = async (req, res) => {
 const signup = async (req, res) => {
   try {
     const { userName, phoneNumber, email, password, role } = req.body;
+    // Whitelist: only "visitor" and "athlete" are allowed from user input.
+    // "admin" and "dev" must never be self-assigned — they are silently blocked.
+    const ALLOWED_SIGNUP_ROLES = ["visitor", "athlete"];
+    const safeRole = ALLOWED_SIGNUP_ROLES.includes(role) ? role : "visitor";
 
     if (!userName || !phoneNumber || !email || !password) {
       return res
@@ -149,7 +153,7 @@ const signup = async (req, res) => {
       phoneNumber,
       email,
       password: hashedPassword,
-      role: role || "visitor",
+      role: safeRole, // only "visitor" or "athlete" — admin/dev are blocked
       verificationToken,
       verificationTokenExpires,
     });
@@ -319,10 +323,13 @@ const forgotPassword = async (req, res) => {
     }
 
     const user = await userModel.findOne({ email });
+
+    // Security: always respond with 200 regardless of whether the email exists.
+    // Returning 404 reveals which emails are registered (email enumeration attack).
     if (!user) {
       return res
-        .status(404)
-        .json(new CommonResponse(404, "User not found", null));
+        .status(200)
+        .json(new CommonResponse(200, "If this email is registered, a reset link has been sent.", null));
     }
 
     // Generate reset token
