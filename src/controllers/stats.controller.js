@@ -9,7 +9,7 @@ const CommonResponse = require("../utils/common.response");
 const getStats = async (req, res) => {
   try {
     const [eventCount, athleteCount, visitorCount] = await Promise.all([
-      eventModel.countDocuments(),
+      eventModel.countDocuments({ isActive: true }),
       ticketModel.countDocuments({ ticketType: "athlete" }),
       ticketModel.countDocuments({ ticketType: { $ne: "athlete" } }),
     ]);
