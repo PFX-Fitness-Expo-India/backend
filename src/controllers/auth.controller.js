@@ -136,10 +136,29 @@ const signup = async (req, res) => {
 
     const userPhone = await userModel.findOne({ phoneNumber });
     const userMail = await userModel.findOne({ email });
-    if (userPhone || userMail) {
+
+    if (userPhone && userMail) {
       return res
         .status(409)
-        .json(new CommonResponse(409, "User already exists", null));
+        .json(
+          new CommonResponse(
+            409,
+            "Both email and phone number are already registered",
+            null,
+          ),
+        );
+    }
+    if (userMail) {
+      return res
+        .status(409)
+        .json(new CommonResponse(409, "Email is already registered", null));
+    }
+    if (userPhone) {
+      return res
+        .status(409)
+        .json(
+          new CommonResponse(409, "Phone number is already registered", null),
+        );
     }
 
     const saltRounds = 10;
