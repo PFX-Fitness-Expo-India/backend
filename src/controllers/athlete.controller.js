@@ -14,56 +14,54 @@ const createRegistration = async (req, res) => {
         .json(new CommonResponse(400, "Event ID is required for athlete registration", null));
     }
 
-    let registration;
-    let isNew = false;
-
-    // Check if a registration already exists for this user + event
-    const existingRegistration = await registrationModel.findOne({ userId, eventId });
-
-    if (existingRegistration) {
-      // Update their details but keep going — ticket must still be issued below
-      existingRegistration.age = age;
-      existingRegistration.gender = gender;
-      existingRegistration.weight = weight;
-      existingRegistration.subcategory = subcategory;
-      existingRegistration.paymentMethod = paymentMethod || "online";
-      await existingRegistration.save();
-      registration = existingRegistration;
-    } else {
-      // Brand new registration
-      registration = new registrationModel({
-        userId,
-        eventId,
-        age,
-        gender,
-        weight,
-        subcategory,
-        status: "pending",
-        paymentMethod: paymentMethod || "online",
-        paymentStatus: "pending",
-      });
-      await registration.save();
-      isNew = true;
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "User not found", null));
     }
 
-    // Always issue a ticket (issueTicket has a built-in duplicate guard —
-    // it returns the existing ticket if one already exists for userId + eventId).
-    try {
-      const ticket = await issueTicket(userId, eventId, "athlete", subcategory);
-      console.log(`[createRegistration] Ticket ready: ${ticket.ticketId} for userId: ${userId}`);
-    } catch (ticketError) {
-      // Non-fatal: registration is saved, ticket can be retried
-      console.error("[createRegistration] Ticket issuance failed (non-fatal):", ticketError.message);
+    // Check for an existing PENDING registration for this user + event (mirror visitor behaviour)
+    const query = {
+      userId,
+      eventId,
+      paymentStatus: "pending",
+    };
+
+    const existingPendingRegistration = await registrationModel.findOne(query);
+
+    if (existingPendingRegistration) {
+      // Return the existing pending registration so the frontend can use its _id for create-order
+      return res
+        .status(200)
+        .json(
+          new CommonResponse(
+            200,
+            "Pending registration for this event already exists",
+            existingPendingRegistration,
+          ),
+        );
     }
+
+    // Create a fresh registration — paymentStatus: pending, NO ticket issued yet
+    const registration = new registrationModel({
+      userId,
+      eventId,
+      age,
+      gender,
+      weight,
+      subcategory,
+      status: "pending",
+      paymentMethod: paymentMethod || "online",
+      paymentStatus: "pending",
+    });
+
+    await registration.save();
 
     return res
-      .status(isNew ? 201 : 200)
+      .status(201)
       .json(
-        new CommonResponse(
-          isNew ? 201 : 200,
-          isNew ? "Registration initiated successfully" : "Registration updated",
-          registration,
-        ),
+        new CommonResponse(201, "Athlete registration initiated", registration),
       );
   } catch (error) {
     console.error("Create registration error:", error);
