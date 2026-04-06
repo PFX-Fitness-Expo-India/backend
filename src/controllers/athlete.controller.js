@@ -38,7 +38,7 @@ const createRegistration = async (req, res) => {
           .json(
             new CommonResponse(
               400,
-              `You are already registered for this subcategory (${subcategory || "standard"})`,
+              "you have already registered for this event",
               null,
             ),
           );
@@ -50,7 +50,7 @@ const createRegistration = async (req, res) => {
         .json(
           new CommonResponse(
             200,
-            "Pending registration for this subcategory already exists",
+            "you have already registered for this event",
             existingRegistration,
           ),
         );
@@ -356,7 +356,7 @@ const addAtheleteToEvent = async (req, res) => {
       return res
         .status(400)
         .json(
-          new CommonResponse(400, "User is already registered for this subcategory", null),
+          new CommonResponse(400, "you have already registered for this event", null),
         );
     }
 
