@@ -21,24 +21,37 @@ const createRegistration = async (req, res) => {
         .json(new CommonResponse(404, "User not found", null));
     }
 
-    // Check for an existing PENDING registration for this user + event (mirror visitor behaviour)
+    // Check for an existing registration (pending or completed) for this user + event + subcategory
     const query = {
       userId,
       eventId,
-      paymentStatus: "pending",
+      subcategory,
+      paymentStatus: { $in: ["pending", "completed"] },
     };
 
-    const existingPendingRegistration = await registrationModel.findOne(query);
+    const existingRegistration = await registrationModel.findOne(query);
 
-    if (existingPendingRegistration) {
+    if (existingRegistration) {
+      if (existingRegistration.paymentStatus === "completed") {
+        return res
+          .status(400)
+          .json(
+            new CommonResponse(
+              400,
+              `You are already registered for this subcategory (${subcategory || "standard"})`,
+              null,
+            ),
+          );
+      }
+
       // Return the existing pending registration so the frontend can use its _id for create-order
       return res
         .status(200)
         .json(
           new CommonResponse(
             200,
-            "Pending registration for this event already exists",
-            existingPendingRegistration,
+            "Pending registration for this subcategory already exists",
+            existingRegistration,
           ),
         );
     }
@@ -328,6 +341,22 @@ const addAtheleteToEvent = async (req, res) => {
           .status(404)
           .json(new CommonResponse(404, "Event not found", null));
       }
+    }
+
+    // Check if registration already exists to avoid duplicates
+    const existingRegistration = await registrationModel.findOne({
+      userId: user._id,
+      eventId,
+      subcategory,
+      paymentStatus: { $in: ["pending", "completed"] },
+    });
+
+    if (existingRegistration) {
+      return res
+        .status(400)
+        .json(
+          new CommonResponse(400, "User is already registered for this subcategory", null),
+        );
     }
 
     const registrationData = {

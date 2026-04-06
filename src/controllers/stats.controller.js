@@ -166,8 +166,119 @@ const getEventStats = async (req, res) => {
   }
 };
 
+/**
+ * Get Specific Event Stats
+ * GET /api/stats/events/:id
+ */
+const getSingleEventStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const mongoose = require("mongoose");
+
+    // Fetch the specific event
+    let event;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      event = await eventModel.findById(id).lean();
+    } else {
+      event = await eventModel.findOne({ eventId: id }).lean();
+    }
+
+    if (!event) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "Event not found", null));
+    }
+
+    const [registrationStats, paymentStats] = await Promise.all([
+      registrationModel.aggregate([
+        { $match: { eventId: event._id } },
+        {
+          $group: {
+            _id: "$subcategory",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+      paymentModel.aggregate([
+        {
+          $match: {
+            eventId: event._id,
+            paymentStatus: "completed",
+          },
+        },
+        {
+          $lookup: {
+            from: "registrations",
+            localField: "registrationId",
+            foreignField: "_id",
+            as: "registration",
+          },
+        },
+        { $unwind: { path: "$registration", preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: "$registration.subcategory",
+            revenue: { $sum: "$amount" },
+          },
+        },
+      ]),
+    ]);
+
+    const totalAthletes = registrationStats.reduce((acc, curr) => acc + curr.count, 0);
+    const totalRevenue = paymentStats.reduce((acc, curr) => acc + curr.revenue, 0);
+
+    let subcategoryBreakdown = [];
+    if (event.haveSubcategory && event.subcategories) {
+      subcategoryBreakdown = event.subcategories.map((sub) => {
+        const reg = registrationStats.find((r) => r._id === sub);
+        const pay = paymentStats.find((p) => p._id === sub);
+        return {
+          subcategory: sub,
+          athletes: reg ? reg.count : 0,
+          revenue: pay ? pay.revenue : 0,
+        };
+      });
+
+      // Catch "unofficial" subcategories
+      registrationStats.forEach((rs) => {
+        if (rs._id && !event.subcategories.includes(rs._id)) {
+          const pay = paymentStats.find((p) => p._id === rs._id);
+          subcategoryBreakdown.push({
+            subcategory: rs._id,
+            athletes: rs.count,
+            revenue: pay ? pay.revenue : 0,
+          });
+        }
+      });
+    }
+
+    const result = {
+      _id: event._id,
+      eventId: event.eventId,
+      eventName: event.eventName,
+      haveSubcategory: event.haveSubcategory,
+      subcategories: event.subcategories || [],
+      totalAthletes,
+      totalRevenue,
+      subcategoryBreakdown: subcategoryBreakdown.length > 0 ? subcategoryBreakdown : undefined,
+    };
+
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(200, "Single event statistics fetched successfully", result),
+      );
+  } catch (error) {
+    console.error("Get single event statistics error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
 module.exports = {
   getStats,
   getTotalPaymentsReceived,
   getEventStats,
+  getSingleEventStats,
 };
