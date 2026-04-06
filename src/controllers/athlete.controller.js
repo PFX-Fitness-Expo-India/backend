@@ -312,7 +312,8 @@ const addAtheleteToEvent = async (req, res) => {
         .json(new CommonResponse(400, "Event ID is required to add athlete to event", null));
     }
 
-    const user = await userModel.findOne({ email: userMail });
+    const normalizedEmail = userMail ? userMail.toLowerCase().trim() : userMail;
+    const user = await userModel.findOne({ email: normalizedEmail });
     if (!user) {
       return res
         .status(404)
