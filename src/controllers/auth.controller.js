@@ -26,10 +26,14 @@ const login = async (req, res) => {
 
     let user;
 
-    if (validator.isEmail(credentials)) {
-      user = await userModel.findOne({ email: credentials });
-    } else if (validator.isMobilePhone(credentials, "any")) {
-      user = await userModel.findOne({ phoneNumber: credentials });
+    const normalizedCredentials = validator.isEmail(credentials) 
+      ? credentials.toLowerCase().trim() 
+      : credentials;
+
+    if (validator.isEmail(normalizedCredentials)) {
+      user = await userModel.findOne({ email: normalizedCredentials });
+    } else if (validator.isMobilePhone(normalizedCredentials, "any")) {
+      user = await userModel.findOne({ phoneNumber: normalizedCredentials });
     } else {
       return res
         .status(400)
@@ -99,6 +103,7 @@ const login = async (req, res) => {
 const signup = async (req, res) => {
   try {
     const { userName, phoneNumber, email, password, role } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : email;
     // Whitelist: only "visitor" and "athlete" are allowed from user input.
     // "admin" and "dev" must never be self-assigned — they are silently blocked.
     const ALLOWED_SIGNUP_ROLES = ["visitor", "athlete"];
@@ -110,7 +115,7 @@ const signup = async (req, res) => {
         .json(new CommonResponse(400, "Missing required fields", null));
     }
 
-    if (!validator.isEmail(email)) {
+    if (!validator.isEmail(normalizedEmail)) {
       return res
         .status(400)
         .json(new CommonResponse(400, "Invalid email address", null));
@@ -135,7 +140,7 @@ const signup = async (req, res) => {
     }
 
     const userPhone = await userModel.findOne({ phoneNumber });
-    const userMail = await userModel.findOne({ email });
+    const userMail = await userModel.findOne({ email: normalizedEmail });
 
     if (userPhone && userMail) {
       return res
@@ -170,7 +175,7 @@ const signup = async (req, res) => {
     const user = new userModel({
       userName,
       phoneNumber,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role: safeRole, // only "visitor" or "athlete" — admin/dev are blocked
       verificationToken,
@@ -334,14 +339,15 @@ const changePassword = async (req, res) => {
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : email;
 
-    if (!email) {
+    if (!normalizedEmail) {
       return res
         .status(400)
         .json(new CommonResponse(400, "Email is required", null));
     }
 
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email: normalizedEmail });
 
     // Security: always respond with 200 regardless of whether the email exists.
     // Returning 404 reveals which emails are registered (email enumeration attack).
