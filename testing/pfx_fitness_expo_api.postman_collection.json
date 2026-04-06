@@ -1553,6 +1553,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Total Revenue (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stats/revenue",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"stats",
+								"revenue"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

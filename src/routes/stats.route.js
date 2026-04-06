@@ -1,5 +1,6 @@
 const express = require("express");
-const { getStats } = require("../controllers/stats.controller");
+const { getStats, getTotalPaymentsReceived } = require("../controllers/stats.controller");
+const { authenticate, authorize } = require("../middlewares/auth.middleware");
 
 const router = express.Router();
 
@@ -9,5 +10,12 @@ const router = express.Router();
  * @access Public
  */
 router.get("/", getStats);
+
+/**
+ * @route GET /api/stats/revenue
+ * @desc Get Total Payments Received
+ * @access Private (Admin only)
+ */
+router.get("/revenue", authenticate, authorize("admin"), getTotalPaymentsReceived);
 
 module.exports = router;
