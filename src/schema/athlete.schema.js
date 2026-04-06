@@ -13,16 +13,16 @@ const athleteRegistrationSchema = new mongoose.Schema({
   },
   age: {
     type: Number,
-    required: true,
   },
   gender: {
     type: String,
-    required: true,
     enum: ["male", "female"],
   },
   weight: {
     type: Number,
-    required: true,
+  },
+  height: {
+    type: Number,
   },
   subcategory: {
     type: String,

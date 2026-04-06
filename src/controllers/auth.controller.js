@@ -26,8 +26,8 @@ const login = async (req, res) => {
 
     let user;
 
-    const normalizedCredentials = validator.isEmail(credentials) 
-      ? credentials.toLowerCase().trim() 
+    const normalizedCredentials = validator.isEmail(credentials)
+      ? credentials.toLowerCase().trim()
       : credentials;
 
     if (validator.isEmail(normalizedCredentials)) {
@@ -102,7 +102,7 @@ const login = async (req, res) => {
 
 const signup = async (req, res) => {
   try {
-    const { userName, phoneNumber, email, password, role } = req.body;
+    const { userName, phoneNumber, email, password, role, gender, age, weight, height } = req.body;
     const normalizedEmail = email ? email.toLowerCase().trim() : email;
     // Whitelist: only "visitor" and "athlete" are allowed from user input.
     // "admin" and "dev" must never be self-assigned — they are silently blocked.
@@ -113,6 +113,20 @@ const signup = async (req, res) => {
       return res
         .status(400)
         .json(new CommonResponse(400, "Missing required fields", null));
+    }
+
+    if (safeRole === "athlete") {
+      if (!gender || !age || !weight || !height) {
+        return res
+          .status(400)
+          .json(
+            new CommonResponse(
+              400,
+              "Bio-data (gender, age, weight, height) is required for athlete registration",
+              null,
+            ),
+          );
+      }
     }
 
     if (!validator.isEmail(normalizedEmail)) {
@@ -178,6 +192,10 @@ const signup = async (req, res) => {
       email: normalizedEmail,
       password: hashedPassword,
       role: safeRole, // only "visitor" or "athlete" — admin/dev are blocked
+      gender,
+      age,
+      weight,
+      height,
       verificationToken,
       verificationTokenExpires,
     });
@@ -211,23 +229,27 @@ const signup = async (req, res) => {
         html,
       });
 
-      return res.status(201).json(
-        new CommonResponse(
-          201,
-          "User created successfully. Please check your email to verify your account.",
-          null,
-        ),
-      );
+      return res
+        .status(201)
+        .json(
+          new CommonResponse(
+            201,
+            "User created successfully. Please check your email to verify your account.",
+            null,
+          ),
+        );
     } catch (err) {
       console.error("Signup email error:", err);
       // We still created the user, but email failed. User can request resend later if we implement it.
-      return res.status(201).json(
-        new CommonResponse(
-          201,
-          "User created, but verification email could not be sent. Please contact support.",
-          null,
-        ),
-      );
+      return res
+        .status(201)
+        .json(
+          new CommonResponse(
+            201,
+            "User created, but verification email could not be sent. Please contact support.",
+            null,
+          ),
+        );
     }
   } catch (error) {
     console.error("Signup error:", error);
@@ -304,7 +326,9 @@ const changePassword = async (req, res) => {
     if (!oldPassword || !newPassword) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Old and new passwords are required", null));
+        .json(
+          new CommonResponse(400, "Old and new passwords are required", null),
+        );
     }
 
     const user = await userModel.findById(userId);
@@ -354,7 +378,13 @@ const forgotPassword = async (req, res) => {
     if (!user) {
       return res
         .status(200)
-        .json(new CommonResponse(200, "If this email is registered, a reset link has been sent.", null));
+        .json(
+          new CommonResponse(
+            200,
+            "If this email is registered, a reset link has been sent.",
+            null,
+          ),
+        );
     }
 
     // Generate reset token
@@ -369,7 +399,7 @@ const forgotPassword = async (req, res) => {
 
     // Reset URL
     // const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/reset-password/${resetToken}`;
-     const resetUrl = `https://pfx-fe.vercel.app/reset-password/${resetToken}`;
+    const resetUrl = `https://pfx-fe.vercel.app/reset-password/${resetToken}`;
 
     const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please use the button below to reset your password: \n\n ${resetUrl}`;
     const html = `
@@ -427,10 +457,7 @@ const resetPassword = async (req, res) => {
         .json(new CommonResponse(400, "New password is required", null));
     }
 
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await userModel.findOne({
       resetPasswordToken: hashedToken,
@@ -472,7 +499,11 @@ const getUserInfo = async (req, res) => {
         .json(new CommonResponse(400, "Invalid user ID format", null));
     }
 
-    const user = await userModel.findById(id).select("-password -refreshToken -resetPasswordToken -resetPasswordExpires");
+    const user = await userModel
+      .findById(id)
+      .select(
+        "-password -refreshToken -resetPasswordToken -resetPasswordExpires",
+      );
 
     if (!user) {
       return res
@@ -480,9 +511,11 @@ const getUserInfo = async (req, res) => {
         .json(new CommonResponse(404, "User not found", null));
     }
 
-    return res.status(200).json(
-      new CommonResponse(200, "User information fetched successfully", user),
-    );
+    return res
+      .status(200)
+      .json(
+        new CommonResponse(200, "User information fetched successfully", user),
+      );
   } catch (error) {
     console.error("Get user info error:", error);
     return res
@@ -503,7 +536,13 @@ const verifyEmail = async (req, res) => {
     if (!user) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Invalid or expired verification token", null));
+        .json(
+          new CommonResponse(
+            400,
+            "Invalid or expired verification token",
+            null,
+          ),
+        );
     }
 
     user.isVerified = true;
@@ -514,7 +553,13 @@ const verifyEmail = async (req, res) => {
 
     return res
       .status(200)
-      .json(new CommonResponse(200, "Email verified successfully. You can now log in.", null));
+      .json(
+        new CommonResponse(
+          200,
+          "Email verified successfully. You can now log in.",
+          null,
+        ),
+      );
   } catch (error) {
     console.error("Verify email error:", error);
     return res
@@ -523,6 +568,119 @@ const verifyEmail = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const { userName, phoneNumber, gender, age, weight, height } = req.body;
+    const userId = req.user.userId;
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json(new CommonResponse(404, "User not found", null));
+    }
+
+    if (userName) user.userName = userName;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (gender) user.gender = gender;
+    if (age) user.age = age;
+    if (weight) user.weight = weight;
+    if (height) user.height = height;
+
+    await user.save();
+
+    return res
+      .status(200)
+      .json(new CommonResponse(200, "Profile updated successfully", user));
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+const signupAdmin = async (req, res) => {
+  try {
+    const { userName, phoneNumber, email, password } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : email;
+
+    if (!userName || !phoneNumber || !email || !password) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Missing required fields", null));
+    }
+
+    if (!validator.isEmail(normalizedEmail)) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid email address", null));
+    }
+
+    if (!validator.isMobilePhone(phoneNumber, "any")) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Invalid phone number", null));
+    }
+
+    if (!validator.isLength(password, { min: 6 })) {
+      return res
+        .status(400)
+        .json(
+          new CommonResponse(
+            400,
+            "Password must be at least 6 characters long",
+            null,
+          ),
+        );
+    }
+
+    const userPhone = await userModel.findOne({ phoneNumber });
+    const userMail = await userModel.findOne({ email: normalizedEmail });
+
+    if (userPhone || userMail) {
+      return res
+        .status(409)
+        .json(
+          new CommonResponse(
+            409,
+            "Email or phone number already registered",
+            null,
+          ),
+        );
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const user = new userModel({
+      userName,
+      phoneNumber,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: "admin",
+      isVerified: true, // Admins created by other admins are auto-verified
+    });
+
+    await user.save();
+
+    return res
+      .status(201)
+      .json(
+        new CommonResponse(201, "Admin account created successfully", {
+          userId: user._id,
+          userName: user.userName,
+          email: user.email,
+          role: user.role,
+        }),
+      );
+  } catch (error) {
+    console.error("Signup admin error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
 
 module.exports = {
   login,
@@ -534,4 +692,6 @@ module.exports = {
   resetPassword,
   getUserInfo,
   verifyEmail,
+  updateProfile,
+  signupAdmin,
 };

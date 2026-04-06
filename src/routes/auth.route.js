@@ -9,8 +9,10 @@ const {
   resetPassword,
   getUserInfo,
   verifyEmail,
+  updateProfile,
+  signupAdmin,
 } = require("../controllers/auth.controller");
-const { authenticate } = require("../middlewares/auth.middleware");
+const { authenticate, authorize } = require("../middlewares/auth.middleware");
 const router = express.Router();
 
 router.post("/login", login);
@@ -21,6 +23,8 @@ router.post("/logout", authenticate, logout);
 router.post("/change-password", authenticate, changePassword);
 router.post("/forgot-password", forgotPassword);
 router.put("/reset-password/:token", resetPassword);
+router.put("/update-profile", authenticate, updateProfile);
+router.post("/create-admin", authenticate, authorize("admin"), signupAdmin);
 
 router.get("/profile", authenticate, (req, res) => {
   res.status(200).json({

@@ -16,7 +16,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userName\": \"John Doe\",\n    \"phoneNumber\": \"9876543210\",\n    \"email\": \"john@example.com\",\n    \"password\": \"Password123\",\n    \"role\": \"visitor\"\n}",
+							"raw": "{\n    \"userName\": \"Athlete User\",\n    \"phoneNumber\": \"9876543210\",\n    \"email\": \"athlete@example.com\",\n    \"password\": \"Password123\",\n    \"role\": \"athlete\",\n    \"gender\": \"male\",\n    \"age\": 25,\n    \"weight\": 75,\n    \"height\": 180\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -32,6 +32,44 @@
 								"api",
 								"auth",
 								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Admin (Admin Only)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"Admin User\",\n    \"phoneNumber\": \"1122334455\",\n    \"email\": \"admin_new@example.com\",\n    \"password\": \"AdminPassword123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/create-admin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"create-admin"
 							]
 						}
 					},
@@ -329,6 +367,44 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"Athlete Updated\",\n    \"gender\": \"male\",\n    \"age\": 26,\n    \"weight\": 78,\n    \"height\": 180\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/update-profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"update-profile"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -592,7 +668,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"subcategory\": \"85kg and above\",\n    \"paymentMethod\": \"online\"\n}",
+							"raw": "{\n    \"userId\": \"{{userId}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"subcategory\": \"85kg and above\",\n    \"paymentMethod\": \"online\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -686,7 +762,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"eventId\": \"{{eventId}}\", // REQUIRED\n    \"userMail\": \"test@example.com\",\n    \"age\": 25,\n    \"gender\": \"male\",\n    \"weight\": 75,\n    \"subcategory\": \"Below 85kg\"\n}",
+							"raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"userMail\": \"test@example.com\",\n    \"subcategory\": \"Below 85kg\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
