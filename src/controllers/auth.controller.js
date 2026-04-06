@@ -570,8 +570,14 @@ const verifyEmail = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { userName, phoneNumber, gender, age, weight, height } = req.body;
+    const { userName, phoneNumber, gender, age, weight, height, email } = req.body;
     const userId = req.user.userId;
+
+    if (email) {
+      return res
+        .status(400)
+        .json(new CommonResponse(400, "Email cannot be updated", null));
+    }
 
     const user = await userModel.findById(userId);
     if (!user) {
@@ -580,8 +586,17 @@ const updateProfile = async (req, res) => {
         .json(new CommonResponse(404, "User not found", null));
     }
 
+    if (phoneNumber && phoneNumber !== user.phoneNumber) {
+      const existingUser = await userModel.findOne({ phoneNumber });
+      if (existingUser) {
+        return res
+          .status(409)
+          .json(new CommonResponse(409, "Phone number already in use", null));
+      }
+      user.phoneNumber = phoneNumber;
+    }
+
     if (userName) user.userName = userName;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
     if (gender) user.gender = gender;
     if (age) user.age = age;
     if (weight) user.weight = weight;

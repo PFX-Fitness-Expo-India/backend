@@ -385,7 +385,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userName\": \"Athlete Updated\",\n    \"gender\": \"male\",\n    \"age\": 26,\n    \"weight\": 78,\n    \"height\": 180\n}",
+							"raw": "{\n    \"userName\": \"Athlete Updated\",\n    \"phoneNumber\": \"1122334455\",\n    \"gender\": \"male\",\n    \"age\": 26,\n    \"weight\": 78,\n    \"height\": 180\n    // \"email\": \"cannot_update@example.com\" // This will return 400\n}",
 							"options": {
 								"raw": {
 									"language": "json"
