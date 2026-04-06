@@ -1582,6 +1582,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Event Statistics (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stats/events",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"stats",
+								"events"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
