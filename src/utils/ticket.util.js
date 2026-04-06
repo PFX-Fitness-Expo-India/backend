@@ -27,11 +27,16 @@ const generateTicketId = async (year) => {
  */
 const issueTicket = async (userId, eventId, ticketType, subcategory) => {
   try {
-    // Guard: return existing ticket if already issued for this user + event
+    // Guard: return existing ticket if already issued for this user + event + subcategory
     if (eventId) {
-      const existing = await ticketModel.findOne({ userId, eventId });
+      const query = { userId, eventId, ticketType };
+      if (subcategory) query.subcategory = subcategory;
+
+      const existing = await ticketModel.findOne(query);
       if (existing) {
-        console.log(`Ticket already exists for userId ${userId}, eventId ${eventId}. Returning existing: ${existing.ticketId}`);
+        console.log(
+          `Ticket already exists for userId ${userId}, eventId ${eventId}, subcategory ${subcategory || "none"}. Returning existing: ${existing.ticketId}`,
+        );
         return existing;
       }
     }
