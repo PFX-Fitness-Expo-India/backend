@@ -1717,6 +1717,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Visitor Pass Stats (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stats/visitors",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"stats",
+								"visitors"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

@@ -2,6 +2,7 @@ const eventModel = require("../models/event.model");
 const ticketModel = require("../models/ticket.model");
 const paymentModel = require("../models/payment.model");
 const registrationModel = require("../models/registration.model");
+const visitorModel = require("../models/visitor.model");
 const CommonResponse = require("../utils/common.response");
 
 /**
@@ -47,14 +48,12 @@ const getTotalPaymentsReceived = async (req, res) => {
 
     const total = result.length > 0 ? result[0].total : 0;
 
-    return res
-      .status(200)
-      .json(
-        new CommonResponse(200, "Total payments fetched successfully", {
-          totalRevenue: total,
-          currency: "INR",
-        }),
-      );
+    return res.status(200).json(
+      new CommonResponse(200, "Total payments fetched successfully", {
+        totalRevenue: total,
+        currency: "INR",
+      }),
+    );
   } catch (error) {
     console.error("Get total payments error:", error);
     return res
@@ -92,7 +91,9 @@ const getEventStats = async (req, res) => {
             as: "registration",
           },
         },
-        { $unwind: { path: "$registration", preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: { path: "$registration", preserveNullAndEmptyArrays: true },
+        },
         {
           $group: {
             _id: {
@@ -107,14 +108,22 @@ const getEventStats = async (req, res) => {
 
     const statsMap = events.map((event) => {
       const eventRegStats = registrationStats.filter(
-        (rs) => rs._id.eventId && rs._id.eventId.toString() === event._id.toString(),
+        (rs) =>
+          rs._id.eventId && rs._id.eventId.toString() === event._id.toString(),
       );
       const eventPayStats = paymentStats.filter(
-        (ps) => ps._id.eventId && ps._id.eventId.toString() === event._id.toString(),
+        (ps) =>
+          ps._id.eventId && ps._id.eventId.toString() === event._id.toString(),
       );
 
-      const totalAthletes = eventRegStats.reduce((acc, curr) => acc + curr.count, 0);
-      const totalRevenue = eventPayStats.reduce((acc, curr) => acc + curr.revenue, 0);
+      const totalAthletes = eventRegStats.reduce(
+        (acc, curr) => acc + curr.count,
+        0,
+      );
+      const totalRevenue = eventPayStats.reduce(
+        (acc, curr) => acc + curr.revenue,
+        0,
+      );
 
       let subcategoryBreakdown = [];
       if (event.haveSubcategory && event.subcategories) {
@@ -130,8 +139,13 @@ const getEventStats = async (req, res) => {
 
         // Also catch any registrations that might not be in the event's subcategories array
         eventRegStats.forEach((rs) => {
-          if (rs._id.subcategory && !event.subcategories.includes(rs._id.subcategory)) {
-            const pay = eventPayStats.find((p) => p._id.subcategory === rs._id.subcategory);
+          if (
+            rs._id.subcategory &&
+            !event.subcategories.includes(rs._id.subcategory)
+          ) {
+            const pay = eventPayStats.find(
+              (p) => p._id.subcategory === rs._id.subcategory,
+            );
             subcategoryBreakdown.push({
               subcategory: rs._id.subcategory,
               athletes: rs.count,
@@ -149,14 +163,19 @@ const getEventStats = async (req, res) => {
         subcategories: event.subcategories || [],
         totalAthletes,
         totalRevenue,
-        subcategoryBreakdown: subcategoryBreakdown.length > 0 ? subcategoryBreakdown : undefined,
+        subcategoryBreakdown:
+          subcategoryBreakdown.length > 0 ? subcategoryBreakdown : undefined,
       };
     });
 
     return res
       .status(200)
       .json(
-        new CommonResponse(200, "Event statistics fetched successfully", statsMap),
+        new CommonResponse(
+          200,
+          "Event statistics fetched successfully",
+          statsMap,
+        ),
       );
   } catch (error) {
     console.error("Get event statistics error:", error);
@@ -214,7 +233,9 @@ const getSingleEventStats = async (req, res) => {
             as: "registration",
           },
         },
-        { $unwind: { path: "$registration", preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: { path: "$registration", preserveNullAndEmptyArrays: true },
+        },
         {
           $group: {
             _id: "$registration.subcategory",
@@ -224,8 +245,14 @@ const getSingleEventStats = async (req, res) => {
       ]),
     ]);
 
-    const totalAthletes = registrationStats.reduce((acc, curr) => acc + curr.count, 0);
-    const totalRevenue = paymentStats.reduce((acc, curr) => acc + curr.revenue, 0);
+    const totalAthletes = registrationStats.reduce(
+      (acc, curr) => acc + curr.count,
+      0,
+    );
+    const totalRevenue = paymentStats.reduce(
+      (acc, curr) => acc + curr.revenue,
+      0,
+    );
 
     let subcategoryBreakdown = [];
     if (event.haveSubcategory && event.subcategories) {
@@ -260,16 +287,90 @@ const getSingleEventStats = async (req, res) => {
       subcategories: event.subcategories || [],
       totalAthletes,
       totalRevenue,
-      subcategoryBreakdown: subcategoryBreakdown.length > 0 ? subcategoryBreakdown : undefined,
+      subcategoryBreakdown:
+        subcategoryBreakdown.length > 0 ? subcategoryBreakdown : undefined,
     };
 
     return res
       .status(200)
       .json(
-        new CommonResponse(200, "Single event statistics fetched successfully", result),
+        new CommonResponse(
+          200,
+          "Single event statistics fetched successfully",
+          result,
+        ),
       );
   } catch (error) {
     console.error("Get single event statistics error:", error);
+    return res
+      .status(500)
+      .json(new CommonResponse(500, "Internal server error", null));
+  }
+};
+
+/**
+ * Get Visitor Pass Stats
+ * GET /api/stats/visitors
+ */
+const getVisitorStats = async (req, res) => {
+  try {
+    const visitorStats = await paymentModel.aggregate([
+      { $match: { paymentStatus: "completed", visitorId: { $exists: true } } },
+      {
+        $lookup: {
+          from: "visitors",
+          localField: "visitorId",
+          foreignField: "_id",
+          as: "visitor",
+        },
+      },
+      { $unwind: "$visitor" },
+      {
+        $group: {
+          _id: "$visitor.ticketType",
+          revenue: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          passType: "$_id",
+          revenue: 1,
+          userCount: "$count",
+        },
+      },
+    ]);
+
+    // Ensure all pass types are present even if 0
+    const passTypes = ["gold", "standard"];
+    const breakdown = passTypes.map((type) => {
+      const stat = visitorStats.find((s) => s.passType === type);
+      return (
+        stat || {
+          passType: type,
+          revenue: 0,
+          userCount: 0,
+        }
+      );
+    });
+
+    const totalVisitors = breakdown.reduce(
+      (acc, curr) => acc + curr.userCount,
+      0,
+    );
+    const totalRevenue = breakdown.reduce((acc, curr) => acc + curr.revenue, 0);
+
+    return res.status(200).json(
+      new CommonResponse(200, "Visitor statistics fetched successfully", {
+        totalVisitors,
+        totalRevenue,
+        breakdown,
+        currency: "INR",
+      }),
+    );
+  } catch (error) {
+    console.error("Get visitor statistics error:", error);
     return res
       .status(500)
       .json(new CommonResponse(500, "Internal server error", null));
@@ -281,4 +382,5 @@ module.exports = {
   getTotalPaymentsReceived,
   getEventStats,
   getSingleEventStats,
+  getVisitorStats,
 };

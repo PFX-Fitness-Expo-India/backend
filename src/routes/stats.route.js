@@ -1,5 +1,11 @@
 const express = require("express");
-const { getStats, getTotalPaymentsReceived, getEventStats, getSingleEventStats } = require("../controllers/stats.controller");
+const {
+  getStats,
+  getTotalPaymentsReceived,
+  getEventStats,
+  getSingleEventStats,
+  getVisitorStats,
+} = require("../controllers/stats.controller");
 const { authenticate, authorize } = require("../middlewares/auth.middleware");
 
 const router = express.Router();
@@ -31,5 +37,12 @@ router.get("/events", authenticate, authorize("admin"), getEventStats);
  * @access Private (Admin only)
  */
 router.get("/events/:id", authenticate, authorize("admin"), getSingleEventStats);
+
+/**
+ * @route GET /api/stats/visitors
+ * @desc Get Visitor Pass Stats
+ * @access Private (Admin only)
+ */
+router.get("/visitors", authenticate, authorize("admin"), getVisitorStats);
 
 module.exports = router;
