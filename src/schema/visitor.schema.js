@@ -29,6 +29,9 @@ const visitorSchema = new mongoose.Schema({
     default: "notPresent",
     enum: ["notPresent", "present", "attending"],
   },
+  attendanceTimeStamp: {
+    type: Date,
+  },
 });
 
 module.exports = visitorSchema;

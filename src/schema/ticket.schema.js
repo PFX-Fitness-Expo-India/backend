@@ -38,6 +38,9 @@ const ticketSchema = new mongoose.Schema({
   subcategory: {
     type: String,
   },
+  statusUpdatedAt: {
+    type: Date,
+  },
 });
 
 ticketSchema.post("save", async function (doc) {

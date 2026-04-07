@@ -1,4 +1,6 @@
 const ticketModel = require("../models/ticket.model");
+const visitorModel = require("../models/visitor.model");
+const registrationModel = require("../models/registration.model");
 const CommonResponse = require("../utils/common.response");
 
 const getTickets = async (req, res) => {
@@ -76,23 +78,56 @@ const updateTicketStatus = async (req, res) => {
     }
 
     const ticket = await ticketModel.findById(ticketId);
-
     if (!ticket) {
       return res
         .status(404)
         .json(new CommonResponse(404, "Ticket not found", null));
     }
 
-    if (ticket.ticketType === "athlete") {
+    if (ticket.status !== "unused") {
       return res
         .status(400)
         .json(
-          new CommonResponse(400, "This is an athlete ticket", ticket),
+          new CommonResponse(
+            400,
+            `Ticket has already been ${ticket.status} and cannot be updated`,
+            ticket,
+          ),
         );
     }
 
+    const oldStatus = ticket.status;
     ticket.status = status;
+    ticket.statusUpdatedAt = new Date();
     await ticket.save();
+
+    // If marked as "used", update the corresponding attendance record
+    if (status === "used" && oldStatus !== "used") {
+      const attendanceData = {
+        isAttendingEvent: "present",
+        attendanceTimeStamp: new Date(),
+      };
+
+      if (ticket.ticketType === "athlete") {
+        await registrationModel.findOneAndUpdate(
+          { 
+            userId: ticket.userId, 
+            eventId: ticket.eventId, 
+            subcategory: ticket.subcategory 
+          },
+          attendanceData
+        );
+      } else {
+        await visitorModel.findOneAndUpdate(
+          { 
+            userId: ticket.userId, 
+            eventId: ticket.eventId, 
+            ticketType: ticket.ticketType 
+          },
+          attendanceData
+        );
+      }
+    }
 
     return res
       .status(200)

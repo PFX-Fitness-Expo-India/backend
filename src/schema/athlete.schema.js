@@ -47,6 +47,14 @@ const athleteRegistrationSchema = new mongoose.Schema({
     enum: ["pending", "completed"],
     default: "pending",
   },
+  isAttendingEvent: {
+    type: String,
+    default: "notPresent",
+    enum: ["notPresent", "present", "attending"],
+  },
+  attendanceTimeStamp: {
+    type: Date,
+  },
 });
 
 module.exports = athleteRegistrationSchema;

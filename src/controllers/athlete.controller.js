@@ -11,7 +11,13 @@ const createRegistration = async (req, res) => {
     if (!eventId) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Event ID is required for athlete registration", null));
+        .json(
+          new CommonResponse(
+            400,
+            "Event ID is required for athlete registration",
+            null,
+          ),
+        );
     }
 
     const user = await userModel.findById(userId);
@@ -149,7 +155,7 @@ const getRegistrations = async (req, res) => {
 
     // Clone pipeline for count
     const countPipeline = [...pipeline, { $count: "total" }];
-    
+
     // Add pagination to main pipeline
     pipeline.push({ $sort: { timeStamp: -1 } });
     pipeline.push({ $skip: skip });
@@ -197,7 +203,7 @@ const getRegistrations = async (req, res) => {
           limit: limitNum,
           totalPages: Math.ceil(total / limitNum),
         },
-      })
+      }),
     );
   } catch (error) {
     console.error("Get registrations error:", error);
@@ -323,7 +329,13 @@ const addAtheleteToEvent = async (req, res) => {
     if (!eventId) {
       return res
         .status(400)
-        .json(new CommonResponse(400, "Event ID is required to add athlete to event", null));
+        .json(
+          new CommonResponse(
+            400,
+            "Event ID is required to add athlete to event",
+            null,
+          ),
+        );
     }
 
     const normalizedEmail = userMail ? userMail.toLowerCase().trim() : userMail;
@@ -356,7 +368,11 @@ const addAtheleteToEvent = async (req, res) => {
       return res
         .status(400)
         .json(
-          new CommonResponse(400, "you have already registered for this event", null),
+          new CommonResponse(
+            400,
+            "you have already registered for this event",
+            null,
+          ),
         );
     }
 
@@ -380,7 +396,9 @@ const addAtheleteToEvent = async (req, res) => {
     // Issue ticket immediately only if not online payment
     if (paymentMethod !== "online") {
       await issueTicket(user._id, eventId, "athlete", subcategory);
-      await registrationModel.findByIdAndUpdate(registration._id, { status: "approved" });
+      await registrationModel.findByIdAndUpdate(registration._id, {
+        status: "approved",
+      });
     }
 
     return res
@@ -420,11 +438,24 @@ const issueAthleteTicket = async (req, res) => {
     if (!registration) {
       return res
         .status(404)
-        .json(new CommonResponse(404, "Registration not found for this user and event", null));
+        .json(
+          new CommonResponse(
+            404,
+            "Registration not found for this user and event",
+            null,
+          ),
+        );
     }
 
-    const ticket = await issueTicket(userId, eventId, "athlete", registration.subcategory);
-    console.log(`[issueAthleteTicket] Ticket ready: ${ticket.ticketId} for userId: ${userId}`);
+    const ticket = await issueTicket(
+      userId,
+      eventId,
+      "athlete",
+      registration.subcategory,
+    );
+    console.log(
+      `[issueAthleteTicket] Ticket ready: ${ticket.ticketId} for userId: ${userId}`,
+    );
 
     return res
       .status(200)
