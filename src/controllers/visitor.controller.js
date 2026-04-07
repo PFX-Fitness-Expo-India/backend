@@ -110,9 +110,15 @@ const updateVisitorAttendance = async (req, res) => {
         .json(new CommonResponse(400, "Invalid attendance status", null));
     }
 
+    const updateData = { isAttendingEvent };
+    if (["present", "attending"].includes(isAttendingEvent)) {
+      updateData.attendanceTimeStamp = new Date();
+    }
+
     const visitor = await visitorModel.findOneAndUpdate(
       { userId: id },
-      { isAttendingEvent },
+      updateData,
+      { new: true },
     );
 
     if (!visitor) {
