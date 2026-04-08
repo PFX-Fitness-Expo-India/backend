@@ -30,7 +30,8 @@ const login = async (req, res) => {
       ? credentials.toLowerCase().trim()
       : credentials;
 
-    if (validator.isEmail(normalizedCredentials)) {
+    const isEmail = validator.isEmail(normalizedCredentials);
+    if (isEmail) {
       user = await userModel.findOne({ email: normalizedCredentials });
     } else if (validator.isMobilePhone(normalizedCredentials, "any")) {
       user = await userModel.findOne({ phoneNumber: normalizedCredentials });
@@ -43,9 +44,10 @@ const login = async (req, res) => {
     }
 
     if (!user) {
+      const message = isEmail ? "Email not found" : "Phone number not found";
       return res
         .status(404)
-        .json(new CommonResponse(404, "User not found", null));
+        .json(new CommonResponse(404, message, null));
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
