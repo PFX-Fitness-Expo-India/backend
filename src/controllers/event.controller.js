@@ -124,43 +124,53 @@ const getEventSchedule = async (req, res) => {
   try {
     const events = await eventModel
       .find({ isActive: true })
-      .sort({ dayNumber: 1, eventTime: 1 });
+      .sort({ eventDate: 1, eventTime: 1 });
 
-    const scheduleMap = {};
+    const groupedByDate = {}; // date -> events[]
 
     events.forEach((event) => {
-      const dayKey = `day_${event.dayNumber}`;
-      if (!scheduleMap[dayKey]) {
-        const dateObj = new Date(event.eventDate);
-        const dayName = dateObj.toLocaleDateString("en-US", {
-          weekday: "long",
-        }).toUpperCase();
+      // Normalize date to YYYY-MM-DD for grouping
+      const dateObj = new Date(event.eventDate);
+      const dateKey = dateObj.toISOString().split("T")[0];
 
-        scheduleMap[dayKey] = {
-          dayNumber: event.dayNumber,
-          dayName: dayName,
-          date: event.eventDate,
-          subtitle: event.daySubtitle || "",
-          events: [],
-        };
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = [];
       }
-
-      scheduleMap[dayKey].events.push({
-        eventId: event.eventId,
-        eventName: event.eventName,
-        eventLocation: event.eventLocation,
-        eventTime: event.eventTime,
-        eventDescription: event.eventDescription,
-        eventImage: event.eventImage,
-        eventPrice: event.eventPrice,
-        haveSubcategory: event.haveSubcategory,
-        subcategories: event.subcategories,
-        eligibility: event.eligibility || [],
-        eventRules: event.eventRules || [],
-      });
+      groupedByDate[dateKey].push(event);
     });
 
-    const days = Object.values(scheduleMap);
+    // Sort the unique dates chronologically
+    const sortedDates = Object.keys(groupedByDate).sort();
+
+    const days = sortedDates.map((date, index) => {
+      const dateEvents = groupedByDate[date];
+      const dateObj = new Date(date);
+      const dayName = dateObj
+        .toLocaleDateString("en-US", {
+          weekday: "long",
+        })
+        .toUpperCase();
+
+      return {
+        dayNumber: index + 1,
+        dayName: dayName,
+        date: date,
+        subtitle: dateEvents[0].daySubtitle || "", // Take subtitle from first event of that day
+        events: dateEvents.map((event) => ({
+          eventId: event.eventId,
+          eventName: event.eventName,
+          eventLocation: event.eventLocation,
+          eventTime: event.eventTime,
+          eventDescription: event.eventDescription,
+          eventImage: event.eventImage,
+          eventPrice: event.eventPrice,
+          haveSubcategory: event.haveSubcategory,
+          subcategories: event.subcategories,
+          eligibility: event.eligibility || [],
+          eventRules: event.eventRules || [],
+        })),
+      };
+    });
 
     return res.status(200).json(
       new CommonResponse(200, "Schedule fetched successfully", {
