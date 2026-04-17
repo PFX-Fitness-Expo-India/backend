@@ -472,6 +472,20 @@ const resetPassword = async (req, res) => {
         .json(new CommonResponse(400, "Invalid or expired reset token", null));
     }
 
+    // Prevent reuse of the old password
+    const isSameAsOldPassword = await bcrypt.compare(password, user.password);
+    if (isSameAsOldPassword) {
+      return res
+        .status(400)
+        .json(
+          new CommonResponse(
+            400,
+            "New password cannot be the same as your old password. Please choose a different password.",
+            null,
+          ),
+        );
+    }
+
     // Set new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
